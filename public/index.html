@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>即時聊天室</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+      }
+      ul {
+        list-style-type: none;
+        padding: 0;
+      }
+      li {
+        padding: 5px 10px;
+        margin-bottom: 5px;
+        background: #f1f1f1;
+        border-radius: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Socket.IO 聊天室 Demo</h1>
+    <ul id="messages"></ul>
+    <input id="m" autocomplete="off" placeholder="輸入訊息..." />
+    <button onclick="send()">送出</button>
+
+    <script>
+      const socket = io();
+
+      function send() {
+        const input = document.getElementById("m");
+        const msg = input.value.trim();
+        if (msg !== "") {
+          socket.emit("chat message", msg);
+          input.value = "";
+        }
+      }
+
+      socket.on("chat message", (msg) => {
+        const li = document.createElement("li");
+        li.textContent = msg;
+        document.getElementById("messages").appendChild(li);
+      });
+
+      // 允許 Enter 鍵送出訊息
+      document.getElementById("m").addEventListener("keydown", function (e) {
+        if (e.key === "Enter") {
+          send();
+        }
+      });
+    </script>
+  </body>
+</html>
