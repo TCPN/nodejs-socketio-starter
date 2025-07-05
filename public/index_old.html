@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vue 聊天室</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    <style>
+      body {
+        font-family: sans-serif;
+        margin: 20px;
+      }
+      .messages {
+        padding-left: 16px;
+        max-height: 480px;
+        overflow-y: auto;
+        overflow-x: hidden;
+      }
+      .message {
+        margin-bottom: 8px;
+        list-style: none;
+      }
+      .message .username {
+        font-weight: bold;
+        font-size: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <div>
+        <h1>聊天室</h1>
+        <div>
+          <label>名字: </label><input v-model="userName" placeholder="輸入名字" @change="saveUserName" />
+        </div>
+        <div class="messages">
+          <li v-for="(msg, index) in messages" :key="index" class="message">
+            <div v-if="msg.voteId">
+              <div class="username">System</div>
+              Vote started by <strong class="username">{{ msg.userName }}</strong>:
+              <div v-for="item in msg.items">
+                {{ item.text }}: {{ msg.votes.filter(vote => vote.itemId === item.itemId).length }}
+              </div>
+            </div>
+            <template v-else>
+              <div class="username">{{ msg.name }}</div>
+              <div>{{ msg.text }}</div>
+            </template>
+          </li>
+        </div>
+        <div>
+          <input
+            v-model="newMessage"
+            placeholder="輸入訊息..."
+            :disabled="!userName"
+            @keydown.enter="sendMessage"
+          />
+          <button @click="sendMessage">送出</button>
+        </div>
+        <div>
+          <button
+            v-if="!currentVote"
+            @click="startVote">
+            發起投票
+          </button>
+          <button 
+            v-if="currentVote"
+            @click="endVote">
+            結束投票
+          </button>
+          <div v-if="currentVote">
+            <button
+              v-for="(item, i) in currentVote.items"
+              key="item.itemId"
+              @click="() => sendVote(item)"
+            >
+              {{ item.text }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
