@@ -2,7 +2,9 @@
   --color-primary: rgba(255, 255, 255, 0.87);
   --color-secondary: rgba(255, 255, 255, 0.6);
   --color-tertiary: rgba(255, 255, 255, 0.4);
-  --border-color-tertiary: rgba(255, 255, 255, 0.2);
+  --border-color-primary: rgba(255, 255, 255, 0.7);
+  --border-color-second: rgba(255, 255, 255, 0.4);
+  --border-color-tertiary: rgba(255, 255, 255, 0.1);
 
   --bg-color-primary: #242424;
 

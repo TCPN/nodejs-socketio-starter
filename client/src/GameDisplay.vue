@@ -36,9 +36,17 @@ const playerPosition = computed(() => {
 const countDown = useCountDown();
 
 watch(() => currentVote.value?.voteId, () => {
-  if (currentVote.value?.timeout) {
-    countDown.reset(currentVote.value.timeout);
-    countDown.start();
+  const vote = currentVote.value;
+  if (!vote) {
+    return;
+  }
+  if (vote.timeout) {
+    if (!vote.paused) {
+      countDown.reset(currentVote.value.timeout);
+      countDown.start();
+    } else {
+      countDown.reset(currentVote.value.remainTimeout);
+    }
   }
 });
 
@@ -69,7 +77,7 @@ watch(playerPosition, async ([r, c]) => {
         :class="[$style['vote-info'], $style['vote-result']]"
       >
         <div style="margin: 0 24px">
-          <label>上次投票結果</label>
+          <label>#{{ lastVote.index + 1 }} 投票結果</label>
         </div>
         <div
           v-for="item in lastVote.items"
@@ -88,7 +96,7 @@ watch(playerPosition, async ([r, c]) => {
         v-if="currentVote"
         :class="$style['vote-info']"
       >
-        <label>投票中</label>
+        <label>#{{ currentVote.index + 1 }} 投票中</label>
         <div
           v-if="countDown.isRunning.value"
           :class="$style['count-down']"
@@ -99,7 +107,6 @@ watch(playerPosition, async ([r, c]) => {
             :isRunning="countDown.isRunning.value"
           />
         </div>
-        <button @click="() => console.log('GameState:', JSON.parse(JSON.stringify(currentVote)))">debug</button>
       </div>
       <div
         v-if="gameState?.paused"
@@ -154,11 +161,11 @@ watch(playerPosition, async ([r, c]) => {
       </div>
       <div :class="$style['player-status-panel']">
         <div :class="$style['player-status-item']">
-          <label>生命值</label>
-          <span>{{ gameState.life }}</span>
+          <label>生命值: </label>
+          <span> {{ gameState.life }}</span>
         </div>
         <div :class="$style['player-status-item']">
-          <label>訊息: </label>
+          <label>{{ gameState.message ? '訊息: ' : ''}}</label>
           <span>{{ gameState.message ?? '' }}</span>
         </div>
         <!-- <div :class="$style['player-status-item']">
@@ -252,12 +259,11 @@ watch(playerPosition, async ([r, c]) => {
 .player-status-panel {
   height: 100px;
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: 1fr 1fr 2fr;
   place-items: center;
-  align-content: start;
+  align-content: center;
 }
 .player-status-item {
-  height: 100px;
 }
 .items-panel {
   height: 100px;
@@ -268,7 +274,6 @@ watch(playerPosition, async ([r, c]) => {
   gap: 16px;
 }
 .items-panel-item {
-  height: 100px;
 }
 .map {
 

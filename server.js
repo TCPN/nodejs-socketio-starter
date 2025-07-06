@@ -7,6 +7,7 @@ const { log } = require("./logger.js");
 const { setupKeyboardShortcuts } = require("./serverHotkey.js");
 const { transformState, initGameState, getActionInfo } = require("./game.js");
 const { randomPick } = require("./random.js");
+const { isSafeToEmit } = require("./object.js");
 
 
 const app = express();
@@ -41,28 +42,51 @@ async function startServer() {
     const vote = getCurrentVote();
     if (vote) {
       vote.canceled = true;
-      clearTimeout(vote.timeoutId);
-      delete vote.timeoutId;
+      stopVoteTimeout(vote)
+      isSafeToEmit(vote);
       io.emit("vote cancel", vote);
     }
   }
 
-  function tryStartVote(info) {
+  function getVoteEndTime(vote) {
+    return vote.timeout ? (Date.now() + vote.timeout * 1000) : null;
+  }
+
+  function tryStartVote(vote) {
       if (isVoteRunning()) {
         return false;
       }
-      Object.assign(info, {
+      Object.assign(vote, {
         voteId: crypto.randomUUID(),
-        endTime: info.timeout ? (Date.now() + info.timeout * 1000) : null,
+        index: votes.length,
       });
-      votes.push(info);
-      io.emit("vote start", info);
-      if (info.timeout) {
-        info.timeoutId = setTimeout(() => {
-          endVote(info);
-        }, info.timeout * 1000);
-      }
+      votes.push(vote);
+      setVoteTimeout(vote, vote.timeout);
+      isSafeToEmit(vote);
+      io.emit("vote start", vote);
+      tryStartVoteTimeout(vote);
       return true;
+  }
+
+  function setVoteTimeout(vote, timeout) {
+    vote.timeout = timeout;
+    vote.endTime = getVoteEndTime(vote);
+  }
+
+  function tryStartVoteTimeout(vote) {
+    if (vote.timeout) {
+      const remainTime = vote.endTime ? vote.endTime - Date.now() : vote.timeout * 1000;
+      vote.timeoutId = setTimeout(() => {
+        endVote(vote);
+      }, remainTime);
+      return true;
+    }
+    return false;
+  }
+
+  function stopVoteTimeout(vote) {
+    clearTimeout(vote.timeoutId);
+    delete vote.timeoutId;
   }
 
   function endVote(info) {
@@ -73,10 +97,10 @@ async function startServer() {
     }
     vote.finished = true;
     if (vote.timeoutId !== undefined) {
-      clearTimeout(vote.timeoutId);
-      delete vote.timeoutId;
+      stopVoteTimeout(vote);
     }
     log("vote end", vote);
+    isSafeToEmit(vote);
     io.emit("vote end", vote);
     messages.push(vote);
 
@@ -86,12 +110,15 @@ async function startServer() {
 
   function goToNextGameState(action) {
     transformState(gameState, action);
+    isSafeToEmit(gameState);
     io.emit("game state", gameState);
     if (gameState.message) {
-      io.emit("chat message", {
+      const data = {
         name: '榮中青年',
         text: gameState.message,
-      });
+      };
+      isSafeToEmit(data);
+      io.emit("chat message", data);
     }
     if (gameState.finishGoal) {
       return;
@@ -147,6 +174,7 @@ async function startServer() {
 
     socket.on("chat message", (msg) => {
       log("[request] chat message", msg);
+      isSafeToEmit(msg);
       io.emit("chat message", msg);
       messages.push(msg);
     });
@@ -155,6 +183,7 @@ async function startServer() {
       log("[request] game start");
       gameState = initGameState();
       callback(true);
+      isSafeToEmit(gameState);
       io.emit("game state", gameState);
       trySetupGameVote();
     });
@@ -163,6 +192,7 @@ async function startServer() {
       log("[request] game pause");
       gameState.paused = true;
       callback(true);
+      isSafeToEmit(gameState);
       io.emit("game state", gameState);
       cancelCurrentVote();
     });
@@ -171,6 +201,7 @@ async function startServer() {
       log("[request] game resume");
       gameState.paused = false;
       callback(true);
+      isSafeToEmit(gameState);
       io.emit("game state", gameState);
       trySetupGameVote();
     });
@@ -180,6 +211,7 @@ async function startServer() {
       // const started = tryStartVote(info);
       if (nextVoteStartTimeout) {
         clearTimeout(nextVoteStartTimeout);
+        nextVoteStartTimeout = null;
       }
       const started = trySetupGameVote();
       callback(started);
@@ -194,16 +226,53 @@ async function startServer() {
       }
     });
 
+    socket.on("vote set timeout", (info) => {
+      log("[request] vote set timeout", info);
+      const vote = votes.find((vote) => vote.voteId === info.voteId);
+      if (vote) {
+        if ('timeout' in info) {
+          stopVoteTimeout(vote);
+          setVoteTimeout(vote, info.timeout);
+        }
+        if (info.paused === true) {
+          stopVoteTimeout(vote);
+          vote.paused = true;
+          vote.remainTimeout = vote.endTime - Date.now();
+        } else if (info.paused === false) {
+          vote.paused = false;
+          vote.remainTimeout = null;
+          tryStartVoteTimeout(vote);
+        }
+        if (!vote.paused && vote.timeout) {
+          tryStartVoteTimeout(vote);
+        }
+      }
+    });
+
     socket.on("vote end", (info) => {
       log("[request] vote end", info);
       endVote(info);
+    });
+
+    socket.on("vote cancel", (info) => {
+      log("[request] vote cancel", info);
+      cancelCurrentVote(info);
     });
 
     socket.on("disconnect", () => {
       log("使用者離開");
     });
 
-    socket.emit("sync", { messages, vote: isVoteRunning() ? votes.at(-1) : null, game: gameState });
+    const syncData = {
+      messages,
+      vote: isVoteRunning() ? {
+        ...votes.at(-1),
+        timeoutId: undefined,
+      } : null,
+      game: gameState,
+    };
+    isSafeToEmit(syncData);
+    socket.emit("sync", syncData);
   });
 
   const host = "0.0.0.0";

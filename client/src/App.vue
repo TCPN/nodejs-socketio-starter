@@ -12,6 +12,7 @@ import HostAction from './HostAction.vue';
 import PlayerAction from './PlayerAction.vue';
 import Countdown from './components/CountDown.vue';
 import GameDisplay from './GameDisplay.vue';
+import PlayerControlDisplay from './PlayerControlDisplay.vue';
 
 const userStore = useUserStore();
 const { userName, isHost } = storeToRefs(userStore);
@@ -116,11 +117,9 @@ onMounted(() => {
       <GameDisplay
         v-if="isHost"
       />
-      <PlayerAction
+      <PlayerControlDisplay
         v-if="!isHost"
-        :class="$style['action-panel']"
       />
-      <Countdown />
     </div>
   </div>
 </template>
@@ -140,6 +139,9 @@ onMounted(() => {
   align-items: center;
   justify-content: space-between;
   box-shadow: 0 0 5px black;
+  background: var(--bg-color-primary);
+  position: relative;
+  z-index: 2;
 }
 .app-header-right {
 }
@@ -161,8 +163,8 @@ onMounted(() => {
   bottom: 0;
   width: 360px;
   max-width: 100vw;
-  border: 1px solid var(--border-color-tertiary);
-  border-right: none;
+  border-left: 1px solid var(--border-color-tertiary);
+  box-shadow: 0 0 3px black;
   transition: right;
   right: 0;
   z-index: 1;
@@ -181,6 +183,6 @@ onMounted(() => {
   color: var(--color-secondary);
 }
 .action-panel {
-  margin: 16px;
+  padding: 16px;
 }
 </style>

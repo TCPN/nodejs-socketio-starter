@@ -43,7 +43,7 @@ defineProps({
 
 <style lang="css" module>
 .counting {
-  animation: counting 0.5s infinite;
+  animation: counting 1s infinite;
 }
 
 @keyframes counting {

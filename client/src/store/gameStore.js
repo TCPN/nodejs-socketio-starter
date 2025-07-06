@@ -63,7 +63,7 @@ export const useGameStore = defineStore('game', () => {
   async function sendVote(item) {
     voteBusy.value = true;
     const result = await socket.emitWithAck('vote', {
-      userId: userId,
+      userId: userId.value,
       voteId: currentVote.value.voteId,
       itemId: item.itemId,
     });
