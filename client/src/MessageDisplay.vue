@@ -18,18 +18,24 @@ function usernameTransform(name) {
 </script>
 
 <template>
-  <div :class="$style['messages']">
+  <div
+    v-auto-scroll
+    data-scroll-id="messages"
+    :class="$style['messages']"
+  >
     <li v-for="(msg, index) in messages" :key="index" :class="$style['message']">
-      <div v-if="msg.voteId">
-        <div :class="$style['username']">System</div>
-        Vote started by
+      <template v-if="msg.voteId">
+        <div :class="$style['header']">#{{ msg.index + 1 }} 投票結果</div>
+        <!-- Vote started by
         <strong :class="$style['username']">
           {{ usernameTransform(msg.userName) }}
-        </strong>:
-        <div v-for="item in msg.items">
-          {{ item.text }}: {{ Object.values(msg.votes ?? {})?.filter(itemId => itemId === item.itemId).length ?? 0 }}
+        </strong>: -->
+        <div :class="$style['vote-result']">
+          <div v-for="item in msg.items">
+            {{ item.text }}　{{ Object.values(msg.votes ?? {})?.filter(itemId => itemId === item.itemId).length ?? 0 }}
+          </div>
         </div>
-      </div>
+      </template>
       <template v-else>
         <div :class="$style['username']">{{ msg.name }}</div>
         <div>{{ msg.text }}</div>
@@ -40,12 +46,12 @@ function usernameTransform(name) {
 
 <style lang="css" module>
 .messages {
-  padding: 16px;
+  padding: 0 24px;
   overflow-y: auto;
   overflow-x: hidden;
 }
 .message {
-  margin-bottom: 8px;
+  margin: 32px 0;
   list-style: none;
 }
 .username {
@@ -53,5 +59,14 @@ function usernameTransform(name) {
 }
 .message > .username {
   font-size: 0.8em;
+}
+.message .header {
+  margin: 8px 0;
+}
+.vote-result {
+  display: grid;
+  grid-auto-flow: column;
+  gap: 16px;
+  margin: 8px 0;
 }
 </style>

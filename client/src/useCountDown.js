@@ -2,6 +2,7 @@ import { ref, computed } from 'vue';
 
 export function useCountDown({ init = 10, precision = 1000, onEnd, autoStop = true } = {}) {
   const currentValue = ref(0);
+  const isDisabled = ref(false);
   const timer = ref(-1);
   const isRunning = computed(() => {
     return timer.value !== -1;
@@ -11,6 +12,7 @@ export function useCountDown({ init = 10, precision = 1000, onEnd, autoStop = tr
   let endHandler = onEnd;
   let triggerd = false;
 
+  precision = precision <= 100 && precision >= 1 ? precision : 1000;
   const digits = 3 - Math.ceil(Math.log10(precision) || 0);
   const round = (value, decimalDigits) => {
     const base = Math.pow(10, decimalDigits);
@@ -20,6 +22,17 @@ export function useCountDown({ init = 10, precision = 1000, onEnd, autoStop = tr
   const toOuterValue = (value) => {
     return round(value / 1000, digits);
   };
+
+  function startForVote(vote) {
+    if (!vote || vote.finished) {
+      reset(null);
+      return;
+    }
+    reset(vote.endTime ? (vote.endTime - Date.now()) / 1000 : vote.timeout);
+    if (!vote.paused) {
+      start();
+    }
+  }
 
   function start() {
     if (isRunning.value) {
@@ -54,8 +67,9 @@ export function useCountDown({ init = 10, precision = 1000, onEnd, autoStop = tr
     startValue = 0;
     startTime = 0;
     triggerd = false;
-    if (newInit) {
-      init = newInit;
+    isDisabled.value = newInit === null;
+    if (newInit !== undefined) {
+      init = newInit ?? 0;
     }
     currentValue.value = toInnerValue(init);
   }
@@ -78,6 +92,7 @@ export function useCountDown({ init = 10, precision = 1000, onEnd, autoStop = tr
     currentValue: computed(() => {
       return '' + toOuterValue(currentValue.value);
     }),
+    isDisabled,
     isRunning,
     timer,
     onEnd,
@@ -86,5 +101,6 @@ export function useCountDown({ init = 10, precision = 1000, onEnd, autoStop = tr
     reset,
     setValue,
     shiftValue,
+    startForVote,
   };
 }

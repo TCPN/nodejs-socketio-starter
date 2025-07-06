@@ -13,7 +13,7 @@ const { saveUserName } = userStore;
 
 // game state
 const gameStore = useGameStore();
-const { gameState, currentVote, lastVote } = storeToRefs(gameStore);
+const { hasSync, gameState, currentVote, lastVote } = storeToRefs(gameStore);
 
 const map = computed(() => {
   const state = gameState.value;
@@ -35,25 +35,18 @@ const playerPosition = computed(() => {
 
 const countDown = useCountDown();
 
-watch(() => currentVote.value?.voteId, () => {
-  const vote = currentVote.value;
-  if (!vote) {
-    return;
-  }
-  if (vote.timeout) {
-    if (!vote.paused) {
-      countDown.reset(currentVote.value.timeout);
-      countDown.start();
-    } else {
-      countDown.reset(currentVote.value.remainTimeout);
-    }
-  }
+watch(currentVote, () => {
+  countDown.startForVote(currentVote.value);
 });
 
 const mapViewerRef = useTemplateRef('map-viewer');
 const playerMarkRef = useTemplateRef('player-mark');
 
-watch(playerPosition, async ([r, c]) => {
+watch(playerPosition, async (pos) => {
+  if (!pos) {
+    return;
+  }
+  const [r, c] = pos;
   await nextTick();
   if (!playerMarkRef.value) {
     return;
@@ -69,6 +62,19 @@ watch(playerPosition, async ([r, c]) => {
 
 <template>
   <div
+    v-if="!gameState"
+    :class="$style['before-game-panel']"
+  >
+    <span v-if="!hasSync">連線中...</span>
+    <button 
+      v-else
+      @click="gameStore.startGame"
+    >
+      開始遊戲
+    </button>
+  </div>
+  <div
+    v-else
     :class="$style['root']"
   >
     <div :class="$style['vote-info-panel']">
@@ -98,7 +104,7 @@ watch(playerPosition, async ([r, c]) => {
       >
         <label>#{{ currentVote.index + 1 }} 投票中</label>
         <div
-          v-if="countDown.isRunning.value"
+          v-if="!countDown.isDisabled.value"
           :class="$style['count-down']"
         >
           <CountDown
@@ -115,13 +121,13 @@ watch(playerPosition, async ([r, c]) => {
         <label>遊戲暫停</label>
       </div>
       <div
-        v-if="gameState?.finishGoal"
+        v-if="gameState?.end === 'success'"
         :class="$style['vote-info']"
       >
         <label>過關!</label>
       </div>
       <div
-        v-if="gameState?.failed"
+        v-if="gameState?.end === 'failed'"
         :class="$style['vote-info']"
       >
         <label>失敗!</label>
@@ -198,6 +204,14 @@ watch(playerPosition, async ([r, c]) => {
 </template>
 
 <style lang="css" module>
+.before-game-panel {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  width: 100%;
+  gap: 16px;
+}
 .root {
   display: grid;
   height: 100%;
@@ -225,6 +239,7 @@ watch(playerPosition, async ([r, c]) => {
   display: grid;
   grid-auto-flow: row;
   text-align: center;
+  width: 3ex;
 }
 /* .vote-result-item {
   font-size: 24px;

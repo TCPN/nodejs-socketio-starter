@@ -20,8 +20,15 @@ const { saveUserName } = userStore;
 
 // UI state
 const welcomeInput = ref(userName.value === '');
-const showMessageDisplay = ref(false);
-const showHostActionPanel = ref(false);
+const activeRightPanel = ref(null);
+
+function onClickPanelButton(panelKey) {
+  if (activeRightPanel.value === panelKey) {
+    activeRightPanel.value = null;
+  } else {
+    activeRightPanel.value = panelKey;
+  }
+}
 
 // game state
 const gameStore = useGameStore();
@@ -68,19 +75,19 @@ onMounted(() => {
       >
         <button
           v-if="isHost"
-          :class="$style['app-header-button']"
-          @click="showHostActionPanel = !showHostActionPanel"
+          :class="[$style['app-header-button'], { [$style['active']]: activeRightPanel === 'action' }]"
+          @click="() => onClickPanelButton('action')"
           style="background-image: url(/src/assets/lightning.png); background-repeat: no-repeat; background-position: center; background-size: 24px;"
         />
         <button
-          :class="$style['app-header-button']"
-          @click="showMessageDisplay = !showMessageDisplay"
+          :class="[$style['app-header-button'], { [$style['active']]: activeRightPanel === 'message' }]"
+          @click="() => onClickPanelButton('message')"
           style="background-image: url(/src/assets/chat.png); background-repeat: no-repeat; background-position: center; background-size: 24px;"
         />
       </div>
     </div>
     <MessageDisplay
-      v-if="showMessageDisplay"
+      v-if="activeRightPanel === 'message'"
       :messages="messages"
       :class="{
         [$style['right-panel']]: true,
@@ -99,7 +106,7 @@ onMounted(() => {
       }"
     />
     <div
-      v-if="showHostActionPanel"
+      v-if="activeRightPanel === 'action'"
       :class="{
         [$style['right-panel']]: true,
       }"
@@ -156,6 +163,12 @@ onMounted(() => {
 .app-header-button:hover {
   background: #7774;
 }
+.app-header-button.active {
+  background: #7777;
+}
+.app-header-button.active:hover {
+  background: #7778;
+}
 .right-panel {
   background: var(--bg-color-primary);
   position: fixed;
@@ -183,6 +196,6 @@ onMounted(() => {
   color: var(--color-secondary);
 }
 .action-panel {
-  padding: 16px;
+  padding: 0 16px;
 }
 </style>

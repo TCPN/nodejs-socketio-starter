@@ -31,13 +31,14 @@ function transformState(state, action) {
         break;
       case '拿蛋糕': {
         state.items.push(gameItems.CAKE);
-        const fridgeItems = state.map['room'].getFridge().cell.items;
+        const fridgeItems = state.maps.room.getFridge().cell.items ??= [];
         removeFromArray(fridgeItems, gameItems.CAKE);
       }
       break;
       case '放蛋糕': {
         removeFromArray(state.items, gameItems.CAKE);
-        state.map['room'].getTable().cell.items.push(gameItems.CAKE);
+        const itemsOfTable = state.maps.room.getTable().cell.items ??= [];
+        itemsOfTable.push(gameItems.CAKE);
       }
       case '撞牆':
         state.life -= 1;
@@ -45,9 +46,10 @@ function transformState(state, action) {
     }
   }
   const finishGoal = checkGoal(state);
-  state.finishGoal = finishGoal;
-  if (state.life <= 0) {
-    state.failed = true;
+  if (finishGoal) {
+    state.end = 'success';
+  } else if (state.life <= 0) {
+    state.end = 'failed';
   }
   return state;
 }
@@ -120,12 +122,12 @@ function willTrigger(state, pos) {
     case '日記':
       return '看日記';
     case '冰箱':
-      if (cell.items.includes(gameItems.CAKE)) {
+      if (cell.items?.includes(gameItems.CAKE)) {
         return '拿蛋糕';
       }
       return null;
     case '几':
-      if (state.items.includes(gameItems.CAKE)) {
+      if (state.items?.includes(gameItems.CAKE)) {
         return '放蛋糕';
       }
       return null;
@@ -154,12 +156,12 @@ function initGameState() {
     life: 40,
     items: [gameItems.CANDLE],
     paused: false,
-    finishGoal: false,
+    end: false,
   };
 }
 
 function checkGoal(state) {
-  return state.maps.room.getTable().cell.items?.includes(gameItems.CAKE);
+  return state.maps.room.getTable()?.cell.items?.includes(gameItems.CAKE);
 }
 
 module.exports = {

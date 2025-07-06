@@ -7,7 +7,6 @@ const { log } = require("./logger.js");
 const { setupKeyboardShortcuts } = require("./serverHotkey.js");
 const { transformState, initGameState, getActionInfo } = require("./game.js");
 const { randomPick } = require("./random.js");
-const { isSafeToEmit } = require("./object.js");
 
 
 const app = express();
@@ -29,6 +28,13 @@ async function startServer() {
   let gameState = null;
   let nextVoteStartTimeout = null;
 
+  function makeVoteEmitSafe(vote) {
+    return {
+      ...vote,
+      timeoutId: undefined,
+    };
+  }
+
   function isVoteRunning() {
     const lastVote = votes.at(-1);
     return lastVote && lastVote.finished !== true;
@@ -43,8 +49,7 @@ async function startServer() {
     if (vote) {
       vote.canceled = true;
       stopVoteTimeout(vote)
-      isSafeToEmit(vote);
-      io.emit("vote cancel", vote);
+      io.emit("vote cancel", makeVoteEmitSafe(vote));
     }
   }
 
@@ -62,8 +67,8 @@ async function startServer() {
       });
       votes.push(vote);
       setVoteTimeout(vote, vote.timeout);
-      isSafeToEmit(vote);
-      io.emit("vote start", vote);
+      io.emit("vote start", makeVoteEmitSafe(vote));
+      log("vote start", vote);
       tryStartVoteTimeout(vote);
       return true;
   }
@@ -71,6 +76,19 @@ async function startServer() {
   function setVoteTimeout(vote, timeout) {
     vote.timeout = timeout;
     vote.endTime = getVoteEndTime(vote);
+  }
+  
+  function pauseVote(vote) {
+    stopVoteTimeout(vote);
+    vote.paused = true;
+    vote.remainTimeout = vote.endTime - Date.now();
+  }
+
+  function resumeVote(vote) {
+    vote.paused = false;
+    vote.endTime = Date.now() + vote.remainTimeout;
+    vote.remainTimeout = null;
+    tryStartVoteTimeout(vote);
   }
 
   function tryStartVoteTimeout(vote) {
@@ -100,8 +118,7 @@ async function startServer() {
       stopVoteTimeout(vote);
     }
     log("vote end", vote);
-    isSafeToEmit(vote);
-    io.emit("vote end", vote);
+    io.emit("vote end", makeVoteEmitSafe(vote));
     messages.push(vote);
 
     const action = decideActionByVote(vote);
@@ -110,17 +127,15 @@ async function startServer() {
 
   function goToNextGameState(action) {
     transformState(gameState, action);
-    isSafeToEmit(gameState);
     io.emit("game state", gameState);
     if (gameState.message) {
       const data = {
         name: '榮中青年',
         text: gameState.message,
       };
-      isSafeToEmit(data);
       io.emit("chat message", data);
     }
-    if (gameState.finishGoal) {
+    if (gameState.end) {
       return;
     }
     nextVoteStartTimeout = setTimeout(() => {
@@ -174,7 +189,6 @@ async function startServer() {
 
     socket.on("chat message", (msg) => {
       log("[request] chat message", msg);
-      isSafeToEmit(msg);
       io.emit("chat message", msg);
       messages.push(msg);
     });
@@ -182,28 +196,46 @@ async function startServer() {
     socket.on("game start", (callback) => {
       log("[request] game start");
       gameState = initGameState();
-      callback(true);
-      isSafeToEmit(gameState);
       io.emit("game state", gameState);
       trySetupGameVote();
+      callback(true);
+    });
+
+    socket.on("game stop", (callback) => {
+      log("[request] game stop");
+      if (isVoteRunning()) {
+        const vote = getCurrentVote()
+        vote.finished = true;
+        stopVoteTimeout(vote);
+        io.emit("vote start", null);
+      }
+      gameState = null;
+      io.emit("game state", null);
+      callback(true);
     });
 
     socket.on("game pause", (callback) => {
       log("[request] game pause");
+      if (isVoteRunning()) {
+        const vote = getCurrentVote();
+        pauseVote(vote);
+        io.emit('vote update', makeVoteEmitSafe(vote))
+      }
       gameState.paused = true;
-      callback(true);
-      isSafeToEmit(gameState);
       io.emit("game state", gameState);
-      cancelCurrentVote();
+      callback(true);
     });
 
     socket.on("game resume", (callback) => {
       log("[request] game resume");
       gameState.paused = false;
-      callback(true);
-      isSafeToEmit(gameState);
       io.emit("game state", gameState);
-      trySetupGameVote();
+      if (isVoteRunning()) {
+        const vote = getCurrentVote();
+        resumeVote(vote);
+        io.emit('vote update', makeVoteEmitSafe(vote))
+      }
+      callback(true);
     });
 
     socket.on("vote start", (info, callback) => {
@@ -228,25 +260,23 @@ async function startServer() {
 
     socket.on("vote set timeout", (info) => {
       log("[request] vote set timeout", info);
-      const vote = votes.find((vote) => vote.voteId === info.voteId);
-      if (vote) {
-        if ('timeout' in info) {
-          stopVoteTimeout(vote);
-          setVoteTimeout(vote, info.timeout);
-        }
-        if (info.paused === true) {
-          stopVoteTimeout(vote);
-          vote.paused = true;
-          vote.remainTimeout = vote.endTime - Date.now();
-        } else if (info.paused === false) {
-          vote.paused = false;
-          vote.remainTimeout = null;
-          tryStartVoteTimeout(vote);
-        }
-        if (!vote.paused && vote.timeout) {
+      const vote = votes.at(-1);
+      if (vote?.voteId !== info.voteId) {
+        return;
+      }
+      if ('timeout' in info) {
+        stopVoteTimeout(vote);
+        setVoteTimeout(vote, info.timeout);
+        if (!('paused' in info) && !vote.paused) {
           tryStartVoteTimeout(vote);
         }
       }
+      if (info.paused === true) {
+        pauseVote(vote);
+      } else if (info.paused === false) {
+        resumeVote(vote);
+      }
+      io.emit("vote update", makeVoteEmitSafe(vote));
     });
 
     socket.on("vote end", (info) => {
@@ -265,13 +295,9 @@ async function startServer() {
 
     const syncData = {
       messages,
-      vote: isVoteRunning() ? {
-        ...votes.at(-1),
-        timeoutId: undefined,
-      } : null,
+      vote: isVoteRunning() ? makeVoteEmitSafe(getCurrentVote()) : null,
       game: gameState,
     };
-    isSafeToEmit(syncData);
     socket.emit("sync", syncData);
   });
 

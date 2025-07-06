@@ -5,6 +5,7 @@ import socket from '../socket.js';
 import { useUserStore } from './userStore.js';
 
 export const useGameStore = defineStore('game', () => {
+  const hasSync = ref(false);
   const messages = ref([]);
   const currentVote = ref(null);
   const lastVote = ref(null);
@@ -22,6 +23,10 @@ export const useGameStore = defineStore('game', () => {
     const result = await socket.emitWithAck('game start');
   }
 
+  async function stopGame() {
+    const result = await socket.emitWithAck('game stop');
+  }
+
   async function pauseGame() {
     const result = await socket.emitWithAck('game pause');
   }
@@ -32,19 +37,19 @@ export const useGameStore = defineStore('game', () => {
 
   // votes
 
+  async function sendVote(item) {
+    voteBusy.value = true;
+    const result = await socket.emitWithAck('vote', {
+      userId: userId.value,
+      voteId: currentVote.value.voteId,
+      itemId: item.itemId,
+    });
+    voteBusy.value = false;
+  }
+
   async function startVote() {
     voteBusy.value = true;
-    const result = await socket.emitWithAck('vote start', {
-      userId: userId.value,
-      userName: userName.value,
-      items: [
-        { text: '上', itemId: 'U' },
-        { text: '左', itemId: 'L' },
-        { text: '下', itemId: 'D' },
-        { text: '右', itemId: 'R' },
-      ],
-      timeout: 10,
-    });
+    const result = await socket.emitWithAck('vote start', { timeout: 10 });
     if (result === false) {
       console.log('other vote is still running');
     }
@@ -60,15 +65,47 @@ export const useGameStore = defineStore('game', () => {
     voteBusy.value = false;
   }
 
-  async function sendVote(item) {
+  async function pauseVoteTimeout() {
     voteBusy.value = true;
-    const result = await socket.emitWithAck('vote', {
+    const result = await socket.emitWithAck('vote set timeout', {
       userId: userId.value,
       voteId: currentVote.value.voteId,
-      itemId: item.itemId,
+      paused: true,
     });
     voteBusy.value = false;
   }
+
+  async function resumeVoteTimeout() {
+    voteBusy.value = true;
+    const result = await socket.emitWithAck('vote set timeout', {
+      userId: userId.value,
+      voteId: currentVote.value.voteId,
+      paused: false,
+    });
+    voteBusy.value = false;
+  }
+
+  async function stopVoteTimeout() {
+    voteBusy.value = true;
+    const result = await socket.emitWithAck('vote set timeout', {
+      userId: userId.value,
+      voteId: currentVote.value.voteId,
+      timeout: null,
+    });
+    voteBusy.value = false;
+  }
+
+  async function restartVoteTimeout() {
+    voteBusy.value = true;
+    const result = await socket.emitWithAck('vote set timeout', {
+      userId: userId.value,
+      voteId: currentVote.value.voteId,
+      timeout: 10,
+    });
+    voteBusy.value = false;
+  }
+
+  // socket
 
   function startListenSocket(){
     socket.on('chat message', (msg) => {
@@ -80,9 +117,15 @@ export const useGameStore = defineStore('game', () => {
         messages.value = data.messages;
       }
       currentVote.value = data.vote;
+      gameState.value = data.game;
+      hasSync.value = true;
     });
 
     socket.on('vote start', (info) => {
+      currentVote.value = info;
+    });
+
+    socket.on('vote update', (info) => {
       currentVote.value = info;
     });
 
@@ -98,8 +141,11 @@ export const useGameStore = defineStore('game', () => {
   }
 
   return {
+    hasSync,
+
     gameState,
     startGame,
+    stopGame,
     pauseGame,
     resumeGame,
 
@@ -107,9 +153,13 @@ export const useGameStore = defineStore('game', () => {
     currentVote,
     lastVote,
     voteBusy,
+    sendVote,
     startVote,
     endVote,
-    sendVote,
+    pauseVoteTimeout,
+    resumeVoteTimeout,
+    stopVoteTimeout,
+    restartVoteTimeout,
     
     startListenSocket,
   };
