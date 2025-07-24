@@ -12,10 +12,12 @@ export const useGameStore = defineStore('game', () => {
   const voteBusy = ref(false);
   const gameState = ref(null);
 
+  const userStore = useUserStore();
+  const { updateUsers } = userStore;
   const {
     userId,
     userName,
-  } = storeToRefs(useUserStore());
+  } = storeToRefs(userStore);
 
   // game control
 
@@ -107,7 +109,9 @@ export const useGameStore = defineStore('game', () => {
 
   // socket
 
-  function startListenSocket(){
+  async function startListenSocket(){
+    socket.emitWithAck('rename', userName.value);
+
     socket.on('chat message', (msg) => {
       messages.value.push(msg);
     });
@@ -119,6 +123,11 @@ export const useGameStore = defineStore('game', () => {
       currentVote.value = data.vote;
       gameState.value = data.game;
       hasSync.value = true;
+      updateUsers(data.clients);
+    });
+
+    socket.on('clients update', (clients) => {
+      updateUsers(clients);
     });
 
     socket.on('vote start', (info) => {

@@ -8,8 +8,9 @@ import { useCountDown } from './useCountDown.js';
 import CountDown from './components/CountDown.vue';
 
 const userStore = useUserStore();
-const { userName, isHost } = storeToRefs(userStore);
-const { saveUserName } = userStore;
+const { allPlayers } = storeToRefs(userStore);
+const onlinePlauers = computed(() => Object.values(allPlayers.value).filter(player => player.status === 'online'));
+
 
 // game state
 const gameStore = useGameStore();
@@ -72,6 +73,18 @@ watch(playerPosition, async (pos) => {
     >
       開始遊戲
     </button>
+    <div
+      :class="$style['player-panel']"
+    >
+      <div
+        v-for="client in onlinePlauers"
+        v-tooltip="client.name"
+        :key="client.id"
+        :class="$style['player-name']"
+      >
+        {{ client.name }}
+      </div>
+    </div>
   </div>
   <div
     v-else
@@ -206,11 +219,33 @@ watch(playerPosition, async (pos) => {
 <style lang="css" module>
 .before-game-panel {
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
   height: 100%;
   width: 100%;
   gap: 16px;
+}
+.before-game-panel .player-panel {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 16px;
+  width: 100%;
+  padding: 0 16px;
+}
+.before-game-panel .player-name {
+  font-size: 12px;
+  font-weight: bold;
+  user-select: none;
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.player-name {
+  font-size: 12px;
 }
 .root {
   display: grid;

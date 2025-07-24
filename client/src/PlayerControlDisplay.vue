@@ -7,7 +7,7 @@ import PlayerAction from './PlayerAction.vue';
 
 // game state
 const gameStore = useGameStore();
-const { currentVote, lastVote, gameState } = storeToRefs(gameStore);
+const { currentVote, lastVote, gameState, hasSync } = storeToRefs(gameStore);
 
 const countDown = useCountDown();
 
@@ -25,7 +25,10 @@ watch(() => currentVote.value?.voteId, () => {
       :class="$style['centered-message']"
     >
       <span v-if="!hasSync">連線中...</span>
-      <span v-else>遊戲尚未開始</span>
+      <span v-else>
+        <p>已連線，您的名字將會出現在螢幕上</p>
+        <p>遊戲尚未開始，請稍待片刻</p>
+      </span>
     </div>
     <div
       v-if="gameState"

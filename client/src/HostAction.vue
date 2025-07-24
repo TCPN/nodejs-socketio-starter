@@ -1,7 +1,11 @@
 <script setup lang="js">
 import PlayerAction from './PlayerAction.vue';
 import { useGameStore } from './store/gameStore.js';
+import { useUserStore } from './store/userStore.js';
 import { storeToRefs } from 'pinia';
+
+const userStore = useUserStore();
+const { allClients, allPlayers } = storeToRefs(userStore);
 
 // game state
 const gameStore = useGameStore();
@@ -91,6 +95,28 @@ const { currentVote, gameState } = storeToRefs(gameStore);
       <PlayerAction style="height: 320px" />
     </div>
     <div :class="$style['section']">
+      <h4 :class="$style['section-header']">Clients ({{ Object.keys(allPlayers).length }})</h4>
+      <div>
+        <div
+          v-for="client in allPlayers"
+          :key="client.id"
+          :class="$style['client-item']"
+        >
+          <div 
+            v-tooltip="client.status"
+            :class="$style['client-status']"
+            :data-status="client.status"
+          ></div>
+          <div
+            :class="$style['client-name']"
+            v-tooltip="`Name: ${client.name}\nID: ${client.id}`"
+          >
+            {{ client.name }}
+          </div>
+        </div>
+      </div>
+    </div>
+    <div :class="$style['section']">
       <h4 :class="$style['section-header']">Debug</h4>
       <button @click="() => console.log('gameState:', JSON.parse(JSON.stringify(gameState)))">print gameState</button>
       <button @click="() => console.log('currentVote:', JSON.parse(JSON.stringify(currentVote)))">print currentVote</button>
@@ -101,6 +127,8 @@ const { currentVote, gameState } = storeToRefs(gameStore);
 <style lang="css" module>
 .container {
   gap: 8px;
+  height: 100%;
+  overflow-y: auto;
 }
 .section {
   display: flex;
@@ -116,5 +144,31 @@ const { currentVote, gameState } = storeToRefs(gameStore);
 .section-header {
   margin: 8px;
   width: 100%;
+}
+.client-item {
+  display: grid;
+  grid-template-columns: 10px 1fr;
+  gap: 6px;
+  align-items: center;
+}
+.client-name {
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.client-status {
+  border-radius: 50%;
+  width: 12px;
+  height: 12px;
+}
+.client-status {
+  border-radius: 50%;
+  width: 10px;
+  height: 10px;
+  background-color: grey;
+}
+.client-status[data-status="online"] {
+  background-color: lawngreen;
 }
 </style>

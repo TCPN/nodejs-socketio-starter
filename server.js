@@ -8,10 +8,20 @@ const { setupKeyboardShortcuts } = require("./serverHotkey.js");
 const { transformState, initGameState, getActionInfo } = require("./game.js");
 const { randomPick } = require("./random.js");
 
+// ref: https://chatgpt.com/s/t_687e7ff5a9908191a592f4b24c96233d
 
 const app = express();
 const httpServer = http.createServer(app)
 const io = new Server(httpServer);
+
+io.use((socket, next) => {
+  const clientId = socket.handshake.auth.clientId;
+  if (!clientId) {
+    return next(new Error('Missing clientId'));
+  }
+  socket.clientId = clientId; // 自定義保存
+  next();
+});
 
 async function startServer() {
   // 🔥 建立 Vite dev server
@@ -23,6 +33,7 @@ async function startServer() {
   app.use(vite.middlewares);
   app.use(express.static("public"));
 
+  const clients = new Map();
   const messages = [];
   const votes = [];
   let gameState = null;
@@ -184,9 +195,7 @@ async function startServer() {
     return tryStartVote(vote);
   }
 
-  io.on("connection", (socket) => {
-    log("使用者已連線");
-
+  function setupClient(socket) {
     socket.on("chat message", (msg) => {
       log("[request] chat message", msg);
       io.emit("chat message", msg);
@@ -289,16 +298,53 @@ async function startServer() {
       cancelCurrentVote(info);
     });
 
-    socket.on("disconnect", () => {
-      log("使用者離開");
-    });
-
     const syncData = {
       messages,
       vote: isVoteRunning() ? makeVoteEmitSafe(getCurrentVote()) : null,
       game: gameState,
+      clients: Object.fromEntries(clients.entries()),
     };
     socket.emit("sync", syncData);
+  }
+
+  io.on("connection", (socket) => {
+    log(`使用者已連線: clientId = ${socket.clientId}`);
+
+    socket.join(socket.clientId);
+    const client = clients.get(socket.clientId) ?? {
+      id: socket.clientId,
+      sockets: {},
+      name: `User ${socket.clientId.slice(0, 4)}`,
+      status: 'online',
+      role: 'player',
+    };
+    if (!clients.has(socket.clientId)) {
+      clients.set(socket.clientId, client);
+    }
+    client.sockets[socket.id] = 'connected';
+    client.status = 'online';
+    io.emit("clients update", { [socket.clientId]: client });
+
+    socket.on("rename", (name) => {
+      client.name = name;
+      if (name === 'IMHost') {
+        client.role = 'host';
+      }
+      io.emit("clients update", { [socket.clientId]: {
+        name: client.name,
+        role: client.role,
+      } });
+    });
+
+    socket.on("disconnect", () => {
+      log(`使用者離開: clientId = ${socket.clientId}`);
+      delete client.sockets[socket.id];
+      if (Object.keys(client.sockets).length === 0) {
+        io.emit("clients update", { [socket.clientId]: { status: 'offline' } });
+      }
+    });
+
+    setupClient(socket);
   });
 
   const host = "0.0.0.0";

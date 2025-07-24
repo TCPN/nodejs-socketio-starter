@@ -46,6 +46,7 @@ onMounted(() => {
     @send="(name) => {
       userName = name;
       welcomeInput = false;
+      socket.emit('rename', name);
       saveUserName();
     }"
   />
@@ -67,7 +68,10 @@ onMounted(() => {
         <input
           v-model="userName"
           placeholder="輸入名字"
-          @change="saveUserName"
+          @change="() => {
+            socket.emit('rename', userName);
+            saveUserName();
+          }"
         />
       </div>
       <div
