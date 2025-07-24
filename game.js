@@ -17,7 +17,7 @@ function transformState(state, action) {
     return {}
   }
   if (action in Direction) {
-    state.message = null;
+    state.messages = [];
     const position = getCurrentPositionState(state);
     const map = getCurrentMap(state);
     const toward = getTowardPosition(position.pos, action);
@@ -27,7 +27,7 @@ function transformState(state, action) {
     const trigger = willTrigger(state, toward);
     switch (trigger) {
       case '看日記':
-        state.message = '沒想到下禮拜天就是 40 歲生日了，真是不得了，去拿蛋糕出來放在茶几上準備慶祝吧';
+        state.messages.push('沒想到下禮拜天就是 40 歲生日了，真是不得了，去拿蛋糕出來放在茶几上準備慶祝吧');
         break;
       case '拿蛋糕': {
         state.items.push(gameItems.CAKE);
@@ -41,7 +41,8 @@ function transformState(state, action) {
         itemsOfTable.push(gameItems.CAKE);
       }
       case '撞牆':
-        state.life -= 1;
+        state.life -= 4;
+        state.messages.push('撞牆受傷，扣 4 點生命值');
         break;
     }
   }

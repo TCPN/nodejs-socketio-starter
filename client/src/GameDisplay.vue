@@ -184,8 +184,8 @@ watch(playerPosition, async (pos) => {
           <span> {{ gameState.life }}</span>
         </div>
         <div :class="$style['player-status-item']">
-          <label>{{ gameState.message ? '訊息: ' : ''}}</label>
-          <span>{{ gameState.message ?? '' }}</span>
+          <label>{{ gameState.messages?.length > 0 ? '訊息: ' : ''}}</label>
+          <span>{{ gameState.messages?.join('\n') ?? '' }}</span>
         </div>
         <!-- <div :class="$style['player-status-item']">
           <label>分數</label>
