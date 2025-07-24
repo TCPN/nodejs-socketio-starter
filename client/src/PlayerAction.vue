@@ -5,7 +5,7 @@ import { storeToRefs } from 'pinia';
 // game state
 const gameStore = useGameStore();
 const { endVote, sendVote } = gameStore;
-const { currentVote } = storeToRefs(gameStore);
+const { currentVote, myChoice } = storeToRefs(gameStore);
 </script>
 
 <template>
@@ -22,7 +22,11 @@ const { currentVote } = storeToRefs(gameStore);
         <button
           v-for="(item, i) in currentVote.items"
           :key="item.itemId"
-          :class="[$style['vote-button'], item.itemId]"
+          :class="[
+            $style['vote-button'],
+            item.itemId,
+            { [$style['vote-chosen']]: myChoice === item.itemId },
+          ]"
           @click="() => sendVote(item)"
         >
           {{ item.text }}
@@ -82,5 +86,8 @@ const { currentVote } = storeToRefs(gameStore);
   display: flex;
   justify-content: center;
   align-items: center;
+}
+.vote-button.vote-chosen {
+  background-color: darkcyan;
 }
 </style>

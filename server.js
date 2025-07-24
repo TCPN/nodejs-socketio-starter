@@ -265,6 +265,7 @@ async function startServer() {
         vote.votes ??= {};
         vote.votes[info.userId] = info.itemId;
       }
+      io.to(info.userId).emit("vote chosen", { [info.userId]: info.itemId })
     });
 
     socket.on("vote set timeout", (info) => {

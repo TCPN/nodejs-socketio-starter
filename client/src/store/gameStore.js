@@ -1,5 +1,5 @@
 import { defineStore, storeToRefs } from 'pinia';
-import { ref, toRef } from 'vue';
+import { computed, ref, toRef } from 'vue';
 
 import socket from '../socket.js';
 import { useUserStore } from './userStore.js';
@@ -18,6 +18,8 @@ export const useGameStore = defineStore('game', () => {
     userId,
     userName,
   } = storeToRefs(userStore);
+
+  const myChoice = computed(() => currentVote.value?.votes?.[userId.value]);
 
   // game control
 
@@ -138,6 +140,12 @@ export const useGameStore = defineStore('game', () => {
       currentVote.value = info;
     });
 
+    socket.on('vote chosen', (info) => {
+      if (info[userId.value]) {
+        currentVote.value.votes = { [userId.value]: info[userId.value] };
+      }
+    });
+
     socket.on('vote end', (info) => {
       messages.value.push(info);
       currentVote.value = null;
@@ -162,6 +170,7 @@ export const useGameStore = defineStore('game', () => {
     currentVote,
     lastVote,
     voteBusy,
+    myChoice,
     sendVote,
     startVote,
     endVote,
