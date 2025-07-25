@@ -48,7 +48,10 @@ watch(currentVote, () => {
 const mapViewerRef = useTemplateRef('map-viewer');
 const playerMarkRef = useTemplateRef('player-mark');
 
-watch(playerPosition, async (pos) => {
+watch(playerPosition, scrollPlayerToCenter);
+
+async function scrollPlayerToCenter() {
+  const pos = playerPosition.value;
   if (!pos) {
     return;
   }
@@ -63,7 +66,13 @@ watch(playerPosition, async (pos) => {
     r * 50 - viewEl.offsetHeight / 2 + 25,
     'smooth'
   );
-});
+}
+
+function onMousedownMap(event) {
+  if (event.button === 1) {
+    scrollPlayerToCenter();
+  }
+}
 </script>
 
 <template>
@@ -158,6 +167,7 @@ watch(playerPosition, async (pos) => {
       <div
         :class="$style['map-viewer']"
         ref="map-viewer"
+        @mousedown="onMousedownMap"
       >
         <div
           :class="$style['map']"
