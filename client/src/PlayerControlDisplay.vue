@@ -7,7 +7,14 @@ import PlayerAction from './PlayerAction.vue';
 
 // game state
 const gameStore = useGameStore();
-const { currentVote, lastVote, gameState, hasSync } = storeToRefs(gameStore);
+const {
+  currentVote,
+  lastVote,
+  gameState,
+  hasSync,
+  myFaction,
+  myScore,
+} = storeToRefs(gameStore);
 
 const countDown = useCountDown();
 
@@ -29,6 +36,20 @@ watch(() => currentVote.value?.voteId, () => {
         <p>已連線，您的名字將會出現在螢幕上</p>
         <p>遊戲尚未開始，請稍待片刻</p>
       </span>
+    </div>
+    <div
+      :class="$style['client-info-panel']"
+    >
+      <div
+        v-if="myFaction"
+      >
+        你屬於 <span :data-faction="myFaction">{{ myFaction }}</span> 陣營
+      </div>
+      <div
+        v-if="myScore != null"
+      >
+        分數: <span>{{ myScore }}</span>
+      </div>
     </div>
     <div
       v-if="gameState"
@@ -64,5 +85,12 @@ watch(() => currentVote.value?.voteId, () => {
   display: flex;
   justify-content: center;
   align-items: center;
+}
+.client-info-panel {
+  display: grid;
+  grid-auto-columns: max-content;
+  grid-auto-flow: column;
+  gap: 32px;
+  margin: 0 16px;
 }
 </style>
