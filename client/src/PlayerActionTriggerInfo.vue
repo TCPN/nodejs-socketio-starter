@@ -76,7 +76,9 @@ const privateItems = computed(() => {
         v-if="item.cond === 'select'"
         :class="[$style['item-mark'], $style['cond-select']]"
       >選</div>
-      {{ item.text }}
+      <span :class="$style['trigger-item-text']">
+        {{ item.text }}
+      </span>
     </div>
   </div>
 </template>
@@ -89,11 +91,18 @@ const privateItems = computed(() => {
   height: 100%;
   width: 100%;
   gap: 16px;
+  user-select: none;
 }
 .trigger-item {
   display: flex;
   justify-content: center;
   align-items: center;
+  gap: 4px;
+}
+.trigger-item-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .item-mark {
   /* background-color: #777; */
