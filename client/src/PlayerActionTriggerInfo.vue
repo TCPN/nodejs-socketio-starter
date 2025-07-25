@@ -34,15 +34,23 @@ function getItemTooltip(item) {
   ].join('\n');
 }
 
+function makeArray(value) {
+  if (Array.isArray(value)) {
+    return value;
+  } else {
+    return [value];
+  }
+}
+
 const globalItems = computed(() => {
   return (props.triggers?.global ?? []).map(normalizeTriggerItem);
 });
 
 const privateItems = computed(() => {
   return [
-    ...(props.triggers?.private?.['all'] ?? []),
-    ...(props.triggers?.private?.[myFaction.value] ?? []),
-    ...(props.triggers?.private?.[userId.value] ?? []),
+    ...makeArray(props.triggers?.private?.['all'] ?? []),
+    ...makeArray(props.triggers?.private?.[myFaction.value] ?? []),
+    ...makeArray(props.triggers?.private?.[userId.value] ?? []),
   ].map(normalizeTriggerItem);
 });
 </script>
