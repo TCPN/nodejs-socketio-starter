@@ -19,7 +19,11 @@ export const useGameStore = defineStore('game', () => {
     userName,
   } = storeToRefs(userStore);
 
+  // this player info
+
   const myChoice = computed(() => currentVote.value?.votes?.[userId.value]);
+  const myFaction = computed(() => gameState.value?.players?.[userId.value]?.faction);
+  const myScore = computed(() => gameState.value?.players?.[userId.value]?.score);
 
   // game control
 
@@ -166,11 +170,14 @@ export const useGameStore = defineStore('game', () => {
     pauseGame,
     resumeGame,
 
+    myChoice,
+    myFaction,
+    myScore,
+
     messages,
     currentVote,
     lastVote,
     voteBusy,
-    myChoice,
     sendVote,
     startVote,
     endVote,

@@ -1,0 +1,107 @@
+<script setup lang="js">
+import { computed } from 'vue';
+import { storeToRefs } from 'pinia';
+import { useGameStore } from './store/gameStore.js';
+import { useUserStore } from './store/userStore.js';
+
+const props = defineProps({
+  triggers: {
+    type: Object,
+    default: () => {},
+  },
+});
+
+const userStore = useUserStore();
+const { userId } = storeToRefs(userStore);
+
+const gameStore = useGameStore();
+const { myFaction } = storeToRefs(gameStore);
+
+function normalizeTriggerItem(item) {
+  if (typeof item === 'string') {
+    return { text: item };
+  } else {
+    return item;
+  }
+}
+
+function getItemTooltip(item) {
+  return [
+    item.text,
+    '',
+    '* 專屬 (只有你能看到這個機會)',
+    ...(item.cond === 'select' ? ['* 選就送 (選擇就可獲得，不論投票結果)'] : [])
+  ].join('\n');
+}
+
+const globalItems = computed(() => {
+  return (props.triggers?.global ?? []).map(normalizeTriggerItem);
+});
+
+const privateItems = computed(() => {
+  return [
+    ...(props.triggers?.private?.['all'] ?? []),
+    ...(props.triggers?.private?.[myFaction.value] ?? []),
+    ...(props.triggers?.private?.[userId.value] ?? []),
+  ].map(normalizeTriggerItem);
+});
+</script>
+
+<template>
+  <div :class="$style['trigger-info-container']">
+    <div
+      v-for="item in globalItems"
+      :key="item.text"
+    >
+      {{ item.text }}
+    </div>
+    <div
+      v-for="item in privateItems"
+      :key="item.text"
+      :class="$style['trigger-item']"
+      v-tooltip="getItemTooltip(item)"
+    >
+      <div
+        :class="[$style['item-mark'], $style['item-private']]"
+      >專</div>
+      <div
+        v-if="item.cond === 'select'"
+        :class="[$style['item-mark'], $style['cond-select']]"
+      >選</div>
+      {{ item.text }}
+    </div>
+  </div>
+</template>
+
+<style lang="css" module>
+.trigger-info-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  width: 100%;
+  gap: 16px;
+}
+.trigger-item {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.item-mark {
+  /* background-color: #777; */
+  border-radius: 50%;
+  width: 10px;
+  height: 10px;
+  font-size: 6px;
+}
+.item-mark.item-private {
+  /* background-color: orange; */
+  color: #999;
+  border: 1px solid;
+}
+.item-mark.cond-select {
+  /* background-color: orange; */
+  color: orange;
+  border: 1px solid;
+}
+</style>

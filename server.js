@@ -204,7 +204,10 @@ async function startServer() {
 
     socket.on("game start", (callback) => {
       log("[request] game start");
-      gameState = initGameState();
+      const playerIds = ([...clients.values()]
+        .filter((client) => client.role === 'player')
+        .map(client => client.id));
+      gameState = initGameState(playerIds);
       io.emit("game state", gameState);
       trySetupGameVote();
       callback(true);
