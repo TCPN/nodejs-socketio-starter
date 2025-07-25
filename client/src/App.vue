@@ -202,4 +202,18 @@ onMounted(() => {
 .action-panel {
   padding: 0 16px;
 }
+
+/* global */
+[data-faction="RED"] {
+  color: red;
+}
+[data-faction="BLUE"] {
+  color: #52adff;
+}
+[data-faction="GREEN"] {
+  color: lightgreen;
+}
+[data-faction="YELLOW"] {
+  color: yellow;
+}
 </style>

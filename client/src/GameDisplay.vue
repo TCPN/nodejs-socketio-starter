@@ -307,6 +307,7 @@ function onMousedownMap(event) {
   grid-auto-flow: row;
   text-align: center;
   width: 3ex;
+  user-select: none;
 }
 /* .vote-result-item {
   font-size: 24px;
@@ -399,22 +400,18 @@ function onMousedownMap(event) {
   user-select: none;
 }
 .score-mark[data-faction="RED"] {
-  color: red;
   top: 0;
   left: 0;
 }
 .score-mark[data-faction="BLUE"] {
-  color: #52adff;
   top: 0;
   right: 0;
 }
 .score-mark[data-faction="GREEN"] {
-  color: lightgreen;
   bottom: 0;
   left: 0;
 }
 .score-mark[data-faction="YELLOW"] {
-  color: yellow;
   bottom: 0;
   right: 0;
 }
