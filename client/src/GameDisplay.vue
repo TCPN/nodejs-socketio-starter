@@ -6,6 +6,7 @@ import { useGameStore } from './store/gameStore.js';
 import { storeToRefs } from 'pinia';
 import { useCountDown } from './useCountDown.js';
 import CountDown from './components/CountDown.vue';
+import { Factions } from './const.js';
 
 const userStore = useUserStore();
 const { allPlayers } = storeToRefs(userStore);
@@ -24,6 +25,10 @@ const map = computed(() => {
   }
   return state.maps[position.map];
 });
+
+function getScoreMarkText(triggerContent) {
+  return triggerContent.replace('分數', '').replace('*', '×').replace('/', '÷').trim();
+}
 
 const playerPosition = computed(() => {
   const state = gameState.value;
@@ -165,7 +170,12 @@ watch(playerPosition, async (pos) => {
               v-for="(cell, c) in row"
               :class="$style['map-cell']"
             >
-              {{ cell.t || '' }}
+              <div
+                v-if="cell.t"
+                :class="$style['map-cell-text']"
+              >
+                {{ cell.t }}
+              </div>
               <div
                 v-if="playerPosition[0] === r && playerPosition[1] === c"
                 ref="player-mark"
@@ -174,6 +184,18 @@ watch(playerPosition, async (pos) => {
               >
                 我
               </div>
+              <template
+                v-for="faction in Factions"
+              >
+                <div
+                  v-if="cell.triggers?.[faction]?.startsWith('分數')"
+                  :class="[$style['score-mark']]"
+                  :data-faction="faction"
+                  v-tooltip="`${faction} 陣營 ${cell.triggers[faction]}`"
+                >
+                  {{ getScoreMarkText(cell.triggers?.[faction]) }}
+                </div>
+              </template>
             </div>
           </div>
         </div>
@@ -341,11 +363,49 @@ watch(playerPosition, async (pos) => {
   display: grid;
   place-items: center;
 }
+.map-cell-text {
+  user-select: none;
+}
 .player-mark {
   position: absolute;
-  height: 100%;
-  width: 100%;
+  height: 2.5em;
+  width: 2.5em;
   display: grid;
   place-items: center;
+  border-radius: 50%;
+  background-color: #7773;
+  user-select: none;
+}
+.score-mark {
+  position: absolute;
+  font-size: 12px;
+  font-family: "Courier New", "Consolas", monospace;
+  min-width: 0;
+  width: max-content;
+  max-width: 50%;
+  border: 1px solid transparent;
+  border-width: 0 1px;
+  font-weight: bold;
+  user-select: none;
+}
+.score-mark[data-faction="RED"] {
+  color: red;
+  top: 0;
+  left: 0;
+}
+.score-mark[data-faction="BLUE"] {
+  color: #52adff;
+  top: 0;
+  right: 0;
+}
+.score-mark[data-faction="GREEN"] {
+  color: lightgreen;
+  bottom: 0;
+  left: 0;
+}
+.score-mark[data-faction="YELLOW"] {
+  color: yellow;
+  bottom: 0;
+  right: 0;
 }
 </style>

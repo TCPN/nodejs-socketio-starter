@@ -1,3 +1,4 @@
+const { Factions } = require("./client/src/const");
 const { gameItems } = require("./gameItems");
 
 const mapObjects = {
@@ -53,6 +54,11 @@ function getCells() {
     cells[20][9].t = "几";
     cells[17][22].t = "桌";
     cells[17][24].t = "桌";
+    cells[22][20].triggers = { [Factions.RED]: '分數+10' };
+    cells[22][21].triggers = { [Factions.BLUE]: '分數-2' };
+    cells[22][22].triggers = { [Factions.YELLOW]: '分數*2' };
+    cells[22][23].triggers = { [Factions.GREEN]: '分數/2' };
+    cells[22][24].triggers = { [Factions.RED]: '分數+1', [Factions.BLUE]: '分數-1' };
 
     cells[0][0].t = "牆";
     cells[0][1].t = "牆";
