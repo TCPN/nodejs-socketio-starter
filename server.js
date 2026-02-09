@@ -136,6 +136,21 @@ async function startServer() {
     goToNextGameState(action);
   }
 
+  function startBetweenVoteTimeout() {
+    stopBetweenVoteTimeout();
+    nextVoteStartTimeout = setTimeout(() => {
+      nextVoteStartTimeout = null;
+      trySetupGameVote();
+    }, 3000);
+  }
+
+  function stopBetweenVoteTimeout() {
+    if (nextVoteStartTimeout) {
+      clearTimeout(nextVoteStartTimeout);
+      nextVoteStartTimeout = null;
+    }
+  }
+
   function goToNextGameState(action) {
     transformState(gameState, action);
     io.emit("game state", gameState);
@@ -149,9 +164,7 @@ async function startServer() {
     if (gameState.end) {
       return;
     }
-    nextVoteStartTimeout = setTimeout(() => {
-      trySetupGameVote();
-    }, 3000);
+    startBetweenVoteTimeout();
   }
 
   function decideActionByVote(vote) {
@@ -188,7 +201,7 @@ async function startServer() {
   }
 
   function trySetupGameVote() {
-    if (gameState.paused) {
+    if (!gameState || gameState.paused) {
       return false;
     }
     const vote = makeGameVote(gameState);
@@ -219,7 +232,8 @@ async function startServer() {
         const vote = getCurrentVote()
         vote.finished = true;
         stopVoteTimeout(vote);
-        io.emit("vote start", null);
+        stopBetweenVoteTimeout();
+        io.emit("vote update", null);
       }
       gameState = null;
       io.emit("game state", null);
@@ -253,10 +267,7 @@ async function startServer() {
     socket.on("vote start", (info, callback) => {
       log("[request] vote start", info);
       // const started = tryStartVote(info);
-      if (nextVoteStartTimeout) {
-        clearTimeout(nextVoteStartTimeout);
-        nextVoteStartTimeout = null;
-      }
+      stopBetweenVoteTimeout();
       const started = trySetupGameVote();
       callback(started);
     });
