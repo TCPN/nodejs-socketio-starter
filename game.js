@@ -187,7 +187,7 @@ function initGameState(players) {
     },
     position: [{
       map: 'room',
-      pos: [20, 20],
+      pos: [15, 13],
     }],
     score: 0,
     life: 40,
