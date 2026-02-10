@@ -7,6 +7,12 @@ function removeFromArray(array, item) {
   return false
 }
 
+function transferItem(item, srcArr, dstArr) {
+  removeFromArray(srcArr, item);
+  dstArr.push(item);
+}
+
 module.exports = {
   removeFromArray,
+  transferItem,
 };
