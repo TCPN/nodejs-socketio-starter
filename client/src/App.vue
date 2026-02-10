@@ -1,7 +1,7 @@
 <script setup lang="js">
 import socket from './socket.js';
 import { userId } from './userId.js';
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import WelcomeView from './WelcomeView.vue';
 import MessageInput from './MessageInput.vue';
 import MessageDisplay from './MessageDisplay.vue';
@@ -16,11 +16,16 @@ import PlayerControlDisplay from './PlayerControlDisplay.vue';
 
 const userStore = useUserStore();
 const { userName, isHost } = storeToRefs(userStore);
-const { saveUserName } = userStore;
+const { changeUserName } = userStore;
 
 // UI state
 const welcomeInput = ref(userName.value === '');
 const activeRightPanel = ref(null);
+const inputUserName = ref(userName.value);
+
+function onChangeUserName() {
+  socket.emit('rename', userName.value);
+}
 
 function onClickPanelButton(panelKey) {
   if (activeRightPanel.value === panelKey) {
@@ -44,10 +49,12 @@ onMounted(() => {
   <WelcomeView
     v-if="welcomeInput"
     @send="(name) => {
-      userName = name;
+      if (!changeUserName(name)) {
+        return;
+      }
+      onChangeUserName();
       welcomeInput = false;
-      socket.emit('rename', name);
-      saveUserName();
+      inputUserName = name;
     }"
   />
   <div
@@ -58,21 +65,33 @@ onMounted(() => {
       :class="$style['app-header']"
     >
       <div
-        v-if="isHost"
-        :class="$style['second-label']"
-      >遊戲主畫面</div>
-      <div v-else>
-        <label
-          :class="$style['input-label']"
-        >你的名字</label>
-        <input
-          v-model="userName"
-          placeholder="輸入名字"
-          @change="() => {
-            socket.emit('rename', userName);
-            saveUserName();
+        :class="$style['app-header-left']"
+      >
+        <div
+          v-if="isHost"
+          :class="$style['second-label']"
+        >遊戲主畫面</div>
+        <div v-else>
+          <label
+            :class="$style['input-label']"
+          >你的名字</label>
+          <input
+            v-model="inputUserName"
+            placeholder="輸入名字"
+            @change="() => {
+              if (!changeUserName(inputUserName)) {
+                inputUserName = userName;
+                return;
+              }
+              onChangeUserName();
+            }"
+          />
+        </div>
+        <button
+          @click="() => {
+            userStore.logout();
           }"
-        />
+        >登出</button>
       </div>
       <div
         :class="$style['app-header-right']"
@@ -153,6 +172,10 @@ onMounted(() => {
   background: var(--bg-color-primary);
   position: relative;
   z-index: 2;
+}
+.app-header-left {
+  display: flex;
+  align-items: center;
 }
 .app-header-right {
 }

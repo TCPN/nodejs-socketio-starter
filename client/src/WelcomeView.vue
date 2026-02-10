@@ -1,9 +1,15 @@
 <script setup lang="js">
 import { ref } from 'vue';
+import { useUserStore } from './store/userStore';
 
 const inputName = ref('');
 
-const emit = defineEmits('send');
+const emit = defineEmits(['send']);
+
+function onContextmenuOnLabel() {
+  const userId = prompt('請輸入 user id');
+  useUserStore().login(userId);
+}
 
 function onSend() {
   if (inputName.value.trim() !== '') {
@@ -18,7 +24,11 @@ function onSend() {
   >
     <label
       for="welcome-input-field"
-      :class="$style['welcome-input-label']">輸入你的名字</label>
+      :class="$style['welcome-input-label']"
+      @contextmenu="onContextmenuOnLabel"
+    >
+      輸入你的姓名
+    </label>
     <input
       id="welcome-input-field"
       v-model="inputName"
