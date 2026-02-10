@@ -77,6 +77,7 @@ onMounted(() => {
           >你的名字</label>
           <input
             v-model="inputUserName"
+            :class="$style['name-input']"
             placeholder="輸入名字"
             @change="() => {
               if (!changeUserName(inputUserName)) {
@@ -195,6 +196,11 @@ onMounted(() => {
 }
 .app-header-button.active:hover {
   background: #7778;
+}
+@media (width <= 500px) {
+  .name-input {
+    width: 120px;
+  }
 }
 .right-panel {
   background: var(--bg-color-primary);
