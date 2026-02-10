@@ -32,7 +32,8 @@ function onSend() {
     <input
       id="welcome-input-field"
       v-model="inputName"
-      placeholder="輸入名字"
+      placeholder="輸入姓名"
+      @keydown.enter="onSend"
     />
     <button
       :disabled="!inputName"
