@@ -1,3 +1,4 @@
+const { removeFromArray, transferItem } = require("./array");
 const { Factions } = require("./client/src/const");
 const { gameItems } = require("./gameItems");
 
@@ -23,6 +24,174 @@ function findCell(cells, cond) {
     }
   }
   return null;
+}
+
+function getTriggers(cell) {
+  const triggers = {};
+  switch (cell.t) {
+    case '日記':
+      triggers.global = ['看日記'];
+      break;
+    case '冰箱':
+      if (cell.items?.includes(gameItems.CAKE)) {
+        triggers.global = ['拿蛋糕'];
+      }
+      break;
+    case '几':
+      if (state.items?.includes(gameItems.CAKE)) {
+        triggers.global = ['放蛋糕'];
+      }
+      break;
+    case '牆':
+      triggers.global = ['撞牆'];
+      break;
+  }
+  return triggers;
+}
+
+function defineTerraTriggers() {
+  /** @typedef {string} RoomEnum */
+  /** @typedef {string} GameItem */
+  /** @typedef {string} PlayerFaction */
+  /** @typedef {string} PlayerItem */
+  /** @typedef {string} PlayerID */
+  /** @typedef {Record<string, any>} Cell */
+  /** @typedef {string} CellType */
+  /**
+   * @typedef {{
+   *   map: RoomEnum,
+   *   pos: [row: number, col: number],
+   * }} CharacterMapPosition
+   */
+  /**
+   * @typedef {{
+   *  id?: PlayerID,
+   *  faction: PlayerFaction,
+   *  score: number,
+   *  items?: PlayerItem[],
+   * }} PlayerState
+   */
+
+  /**
+   * @typedef {{
+   *   maps: Record<RoomEnum, Cell[][]>,
+   *   position: CharacterMapPosition[],
+   *   score: number,
+   *   life: number,
+   *   items: GameItem[],
+   *   players: Record<PlayerID, PlayerState>,
+   *   messages: string[],
+   *   paused: boolean,
+   *   end: boolean,
+   * }} GameState
+   */
+
+  /**
+   * @template TReturn
+   * @typedef {(
+   *  state: GameState,
+   *  cell: Cell | undefined,
+   *  dir: Direction,
+   * ) => TReturn} TriggerFn
+   */
+
+  /**
+   * @typedef {{
+   *  cellType?: [CellType],
+   *  fn?: TriggerFn<boolean>,
+   * }} TriggerActiveCondition
+   */
+
+  /**
+   * @typedef {{
+   *  triggerName: string,
+   *  activeCondition: TriggerActiveCondition,
+   *  triggerBehavior: TriggerFn<void>,
+   * }} TriggerDefinition
+   */
+
+  /** @type {TriggerDefinition} */
+  const DIARY = {
+    triggerName: '看日記',
+    activeCondition: { t: ['日記'] },
+    triggerBehavior: (state) => {
+      state.messages.push('日記：沒想到下禮拜天就是 40 歲生日了，真是不得了，去拿蛋糕出來放在茶几上準備慶祝吧');
+    },
+  };
+  /** @type {TriggerDefinition} */
+  const TAKE_CAKE = {
+    triggerName: '拿蛋糕',
+    activeCondition: {
+      fn: (state, cell, dir) => {
+        return cell && (cell.t === '冰箱' || cell.t === '桌' || cell.t === '几') && cell.items?.includes(gameItems.CAKE)
+      },
+    },
+    triggerBehavior: (state, cell, dir) => {
+      transferItem(gameItems.CAKE, cell.items ??= [], state.items);
+    }
+  };
+  /** @type {TriggerDefinition} */
+  const PUT_CAKE = {
+    triggerName: '放蛋糕',
+    activeCondition: {
+      fn: (state, cell, dir) => {
+        return cell && (cell.t === '冰箱' || cell.t === '桌' || cell.t === '几') && state.items?.includes(gameItems.CAKE)
+      },
+    },
+    triggerBehavior: (state, cell, dir) => {
+      transferItem(gameItems.CAKE, state.items, cell.items ??= []);
+    }
+  };
+  /** @type {TriggerDefinition} */
+  const HIT_WALL = {
+    triggerName: '撞牆',
+    activeCondition: { t: ['牆'] },
+    triggerBehavior: (state, cell, dir) => {
+      state.life -= 4;
+      state.messages.push('撞牆受傷，扣 4 點生命值');
+    }
+  };
+
+  /** @typedef {'+'|'-'|'*'|'/'} ScoreChangeOp */
+  /** @typedef {`${ScoreChangeOp}${number}`} ScoreChangeExpr */
+
+  /**
+   * @param {ScoreChangeExpr} expr
+   * @param {'Character' | PlayerFaction | PlayerID} target
+   * @returns
+   */
+  const makeScoreTrigger = (expr, target) => {
+    const scoreChangerFn = getScoreChangerFnByExpr(expr);
+    return {
+      triggerName: '分數' + expr,
+      activeCondition: { target },
+      triggerBehavior: (state, cell, dir) => {
+        // find target players
+        let target = {}; // TODO
+        const change = parseInt(name.slice(2));
+        state.score += delta;
+        state.messages.push(`獲得 ${delta} 分`);
+        // update target players scores
+        target.score = scoreChangerFn(target.score ?? 0);
+      },
+    }
+  };
+
+  /** @type {Record<ScoreChangeOp, (oprand: number) => ((score: number) => number)>} */
+  const scoreChangerFnMaker = {
+    '+': (oprand) => ((score) => score + oprand),
+    '-': (oprand) => ((score) => score - oprand),
+    '*': (oprand) => ((score) => score * oprand),
+    '/': (oprand) => ((score) => score / oprand),
+  };
+
+  /** @type {(expr: ScoreChangeExpr) => ((score: number) => number)} */
+  const getScoreChangerFnByExpr = (expr) => {
+    /** @type {ScoreChangeOp} */
+    const op = expr[0];
+    const oprand = Number(expr.substr(1));
+    return scoreChangerFnMaker[op](oprand);
+  };
 }
 
 function getRoomMap() {
