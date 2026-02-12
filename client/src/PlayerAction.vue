@@ -1,5 +1,5 @@
 <script setup lang="js">
-import PlayerActionTriggerInfo from './PlayerActionTriggerInfo.vue';
+import PlayerActionEffectInfo from './PlayerActionEffectInfo.vue';
 import { useGameStore } from './store/gameStore.js';
 import { storeToRefs } from 'pinia';
 
@@ -32,11 +32,11 @@ const { currentVote, myChoice } = storeToRefs(gameStore);
         >
           {{ item.text }}
         </button>
-        <PlayerActionTriggerInfo
+        <PlayerActionEffectInfo
           v-for="(item, i) in currentVote.items"
           :key="item.itemId"
           :class="[$style['option-text'], item.itemId]"
-          :triggers="item.info.willTrigger"
+          :effects="item.info.willTrigger"
         />
       </div>
     </div>

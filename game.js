@@ -27,9 +27,9 @@ function transformState(state, action) {
     if (canGoto(map, toward)) {
       position.pos = toward;
     }
-    const triggers = willTrigger(state, toward);
-    for (const trigger of triggers.global ?? []) {
-      const name = trigger.text ?? trigger;
+    const effects = willTrigger(state, toward);
+    for (const effect of effects.global ?? []) {
+      const name = effect.text ?? effect;
       if (name === '看日記') {
         state.messages.push('日記：沒想到下禮拜天就是 40 歲生日了，真是不得了，去拿蛋糕出來放在茶几上準備慶祝吧');
       } else if (name === '拿蛋糕') {
@@ -49,9 +49,9 @@ function transformState(state, action) {
         state.messages.push(`獲得 ${delta} 分`);
       }
     }
-    for (const [target, trigger] of Object.entries(triggers.private ?? {})) {
-      const name = trigger.text ?? trigger;
-      const targetPlayerIds = getTriggerTargetPlayerIds(state, target);
+    for (const [target, effect] of Object.entries(effects.private ?? {})) {
+      const name = effect.text ?? effect;
+      const targetPlayerIds = getEffectTargetPlayerIds(state, target);
       if (name.startsWith('分數')) {
         const delta = parseInt(name.slice(2));
         for (const targetPlayerId of targetPlayerIds) {
@@ -73,7 +73,7 @@ function transformState(state, action) {
   return state;
 }
 
-function getTriggerTargetPlayerIds(state, target) {
+function getEffectTargetPlayerIds(state, target) {
   const playerIds = Object.keys(state.players);
   if (target === 'all') {
     return playerIds;
@@ -148,31 +148,31 @@ function willTrigger(state, pos) {
   const map = getCurrentMap(state);
   const [r, c] = pos;
   const cell = map.cells[r][c];
-  const triggers = {};
+  const effects = {};
   switch (cell.t) {
     case '日記':
-      triggers.global = ['看日記'];
+      effects.global = ['看日記'];
       break;
     case '冰箱':
       if (cell.items?.includes(gameItems.CAKE)) {
-        triggers.global = ['拿蛋糕'];
+        effects.global = ['拿蛋糕'];
       }
       break;
     case '几':
       if (state.items?.includes(gameItems.CAKE)) {
-        triggers.global = ['放蛋糕'];
+        effects.global = ['放蛋糕'];
       }
       break;
     case '牆':
-      triggers.global = ['撞牆'];
+      effects.global = ['撞牆'];
       break;
   }
   
-  for (let target in cell.triggers ?? {}) {
-    triggers.private ??= {};
-    triggers.private[target] = cell.triggers[target];
+  for (let target in cell.effects ?? {}) {
+    effects.private ??= {};
+    effects.private[target] = cell.effects[target];
   }
-  return triggers;
+  return effects;
 }
 
 // enum CellType {

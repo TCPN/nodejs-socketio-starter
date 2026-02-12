@@ -26,8 +26,8 @@ const map = computed(() => {
   return state.maps[position.map];
 });
 
-function getScoreMarkText(triggerContent) {
-  return triggerContent.replace('分數', '').replace('*', '×').replace('/', '÷').trim();
+function getScoreMarkText(effectContent) {
+  return effectContent.replace('分數', '').replace('*', '×').replace('/', '÷').trim();
 }
 
 const playerPosition = computed(() => {
@@ -198,12 +198,12 @@ function onMousedownMap(event) {
                 v-for="faction in Factions"
               >
                 <div
-                  v-if="cell.triggers?.[faction]?.startsWith('分數')"
+                  v-if="cell.effects?.[faction]?.startsWith('分數')"
                   :class="[$style['score-mark']]"
                   :data-faction="faction"
-                  v-tooltip="`${faction} 陣營 ${cell.triggers[faction]}`"
+                  v-tooltip="`${faction} 陣營 ${cell.effects[faction]}`"
                 >
-                  {{ getScoreMarkText(cell.triggers?.[faction]) }}
+                  {{ getScoreMarkText(cell.effects?.[faction]) }}
                 </div>
               </template>
             </div>
@@ -384,7 +384,7 @@ function onMousedownMap(event) {
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background-color: #7773;
+  background-color: #777d;
   user-select: none;
 }
 .score-mark {

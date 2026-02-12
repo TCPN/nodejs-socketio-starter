@@ -5,7 +5,7 @@ import { useGameStore } from './store/gameStore.js';
 import { useUserStore } from './store/userStore.js';
 
 const props = defineProps({
-  triggers: {
+  effects: {
     type: Object,
     default: () => {},
   },
@@ -17,7 +17,7 @@ const { userId } = storeToRefs(userStore);
 const gameStore = useGameStore();
 const { myFaction } = storeToRefs(gameStore);
 
-function normalizeTriggerItem(item) {
+function normalizeEffectItem(item) {
   if (typeof item === 'string') {
     return { text: item };
   } else {
@@ -43,20 +43,20 @@ function makeArray(value) {
 }
 
 const globalItems = computed(() => {
-  return (props.triggers?.global ?? []).map(normalizeTriggerItem);
+  return (props.effects?.global ?? []).map(normalizeEffectItem);
 });
 
 const privateItems = computed(() => {
   return [
-    ...makeArray(props.triggers?.private?.['all'] ?? []),
-    ...makeArray(props.triggers?.private?.[myFaction.value] ?? []),
-    ...makeArray(props.triggers?.private?.[userId.value] ?? []),
-  ].map(normalizeTriggerItem);
+    ...makeArray(props.effects?.private?.['all'] ?? []),
+    ...makeArray(props.effects?.private?.[myFaction.value] ?? []),
+    ...makeArray(props.effects?.private?.[userId.value] ?? []),
+  ].map(normalizeEffectItem);
 });
 </script>
 
 <template>
-  <div :class="$style['trigger-info-container']">
+  <div :class="$style['effect-info-container']">
     <div
       v-for="item in globalItems"
       :key="item.text"
@@ -66,7 +66,7 @@ const privateItems = computed(() => {
     <div
       v-for="item in privateItems"
       :key="item.text"
-      :class="$style['trigger-item']"
+      :class="$style['effect-item']"
       v-tooltip="getItemTooltip(item)"
     >
       <div
@@ -76,7 +76,7 @@ const privateItems = computed(() => {
         v-if="item.cond === 'select'"
         :class="[$style['item-mark'], $style['cond-select']]"
       >選</div>
-      <span :class="$style['trigger-item-text']">
+      <span :class="$style['effect-item-text']">
         {{ item.text }}
       </span>
     </div>
@@ -84,7 +84,7 @@ const privateItems = computed(() => {
 </template>
 
 <style lang="css" module>
-.trigger-info-container {
+.effect-info-container {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -93,13 +93,13 @@ const privateItems = computed(() => {
   gap: 16px;
   user-select: none;
 }
-.trigger-item {
+.effect-item {
   display: flex;
   justify-content: center;
   align-items: center;
   gap: 4px;
 }
-.trigger-item-text {
+.effect-item-text {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

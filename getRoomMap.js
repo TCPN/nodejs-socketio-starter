@@ -26,30 +26,30 @@ function findCell(cells, cond) {
   return null;
 }
 
-function getTriggers(cell) {
-  const triggers = {};
+function getEffects(cell) {
+  const effects = {};
   switch (cell.t) {
     case '日記':
-      triggers.global = ['看日記'];
+      effects.global = ['看日記'];
       break;
     case '冰箱':
       if (cell.items?.includes(gameItems.CAKE)) {
-        triggers.global = ['拿蛋糕'];
+        effects.global = ['拿蛋糕'];
       }
       break;
     case '几':
       if (state.items?.includes(gameItems.CAKE)) {
-        triggers.global = ['放蛋糕'];
+        effects.global = ['放蛋糕'];
       }
       break;
     case '牆':
-      triggers.global = ['撞牆'];
+      effects.global = ['撞牆'];
       break;
   }
-  return triggers;
+  return effects;
 }
 
-function defineTerraTriggers() {
+function defineCellEffects() {
   /** @typedef {string} RoomEnum */
   /** @typedef {string} GameItem */
   /** @typedef {string} PlayerFaction */
@@ -92,61 +92,61 @@ function defineTerraTriggers() {
    *  state: GameState,
    *  cell: Cell | undefined,
    *  dir: Direction,
-   * ) => TReturn} TriggerFn
+   * ) => TReturn} EffectFn
    */
 
   /**
    * @typedef {{
    *  cellType?: [CellType],
-   *  fn?: TriggerFn<boolean>,
-   * }} TriggerActiveCondition
+   *  fn?: EffectFn<boolean>,
+   * }} EffectEnableCondition
    */
 
   /**
    * @typedef {{
-   *  triggerName: string,
-   *  activeCondition: TriggerActiveCondition,
-   *  triggerBehavior: TriggerFn<void>,
-   * }} TriggerDefinition
+   *  name: string,
+   *  enableCondition?: EffectEnableCondition,
+   *  effectFn: EffectFn<void>,
+   * }} EffectDefinition
    */
 
-  /** @type {TriggerDefinition} */
+  /** @type {EffectDefinition} */
   const DIARY = {
-    triggerName: '看日記',
-    activeCondition: { t: ['日記'] },
-    triggerBehavior: (state) => {
+    name: '看日記',
+    enableCondition: { t: ['日記'] },
+    effectFn: (state) => {
       state.messages.push('日記：沒想到下禮拜天就是 40 歲生日了，真是不得了，去拿蛋糕出來放在茶几上準備慶祝吧');
     },
   };
-  /** @type {TriggerDefinition} */
+  /** @type {EffectDefinition} */
   const TAKE_CAKE = {
-    triggerName: '拿蛋糕',
-    activeCondition: {
+    name: '拿蛋糕',
+    enableCondition: {
       fn: (state, cell, dir) => {
         return cell && (cell.t === '冰箱' || cell.t === '桌' || cell.t === '几') && cell.items?.includes(gameItems.CAKE)
       },
     },
-    triggerBehavior: (state, cell, dir) => {
+    effectFn: (state, cell, dir) => {
       transferItem(gameItems.CAKE, cell.items ??= [], state.items);
     }
   };
-  /** @type {TriggerDefinition} */
+  /** @type {EffectDefinition} */
   const PUT_CAKE = {
-    triggerName: '放蛋糕',
-    activeCondition: {
+    name: '放蛋糕',
+    enableCondition: {
       fn: (state, cell, dir) => {
         return cell && (cell.t === '冰箱' || cell.t === '桌' || cell.t === '几') && state.items?.includes(gameItems.CAKE)
       },
     },
-    triggerBehavior: (state, cell, dir) => {
+    effectFn: (state, cell, dir) => {
       transferItem(gameItems.CAKE, state.items, cell.items ??= []);
     }
   };
-  /** @type {TriggerDefinition} */
+  /** @type {EffectDefinition} */
   const HIT_WALL = {
-    triggerName: '撞牆',
-    activeCondition: { t: ['牆'] },
-    triggerBehavior: (state, cell, dir) => {
+    name: '撞牆',
+    enableCondition: { t: ['牆'] },
+    effectFn: (state, cell, dir) => {
       state.life -= 4;
       state.messages.push('撞牆受傷，扣 4 點生命值');
     }
@@ -158,14 +158,14 @@ function defineTerraTriggers() {
   /**
    * @param {ScoreChangeExpr} expr
    * @param {'Character' | PlayerFaction | PlayerID} target
-   * @returns
+   * @returns {EffectDefinition}
    */
-  const makeScoreTrigger = (expr, target) => {
+  const makeScoreEffect = (expr, target) => {
     const scoreChangerFn = getScoreChangerFnByExpr(expr);
     return {
-      triggerName: '分數' + expr,
-      activeCondition: { target },
-      triggerBehavior: (state, cell, dir) => {
+      name: '分數' + expr,
+      enableCondition: { target },
+      effectFn: (state, cell, dir) => {
         // find target players
         let target = {}; // TODO
         const change = parseInt(name.slice(2));
@@ -223,11 +223,11 @@ function getCells() {
     // cells[20][9].t = "几";
     // cells[17][22].t = "桌";
     // cells[17][24].t = "桌";
-    cells[16][10].triggers = { [Factions.RED]: '分數+10' };
-    cells[16][11].triggers = { [Factions.BLUE]: '分數-2' };
-    cells[16][12].triggers = { [Factions.YELLOW]: '分數*2' };
-    cells[16][13].triggers = { [Factions.GREEN]: '分數/2' };
-    cells[16][14].triggers = { [Factions.RED]: '分數+1', [Factions.BLUE]: '分數-1' };
+    cells[16][10].effects = { [Factions.RED]: '分數+10' };
+    cells[16][11].effects = { [Factions.BLUE]: '分數-2' };
+    cells[16][12].effects = { [Factions.YELLOW]: '分數*2' };
+    cells[16][13].effects = { [Factions.GREEN]: '分數/2' };
+    cells[16][14].effects = { [Factions.RED]: '分數+1', [Factions.BLUE]: '分數-1' };
 
     cells[0][0].t = "牆";
     cells[0][1].t = "牆";
