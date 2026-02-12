@@ -2,6 +2,16 @@ const { removeFromArray, transferItem } = require("./array");
 const { Factions } = require("./client/src/const");
 const { gameItems } = require("./gameItems");
 
+/** @enum  */
+const CellType = {
+  WALL: '牆',
+  FENCE: '柵',
+  TABLE: '桌',
+  TEA_TABLE: '几',
+  DIARY: '日記',
+  FRIDGE: '冰箱',
+};
+
 const mapObjects = {
   '牆': { block: true },
   '桌': { block: true },
@@ -28,8 +38,9 @@ function findCell(cells, cond) {
 
 function getRoomMap() {
   const cells = getCells();
-  const table = findCell(cells, (cell) => cell.t === '几');
-  const fridge = findCell(cells, (cell) => cell.t === '冰箱');
+  const table = findCell(cells, (cell) => cell.t === CellType.TEA_TABLE);
+  const fridge = findCell(cells, (cell) => cell.t === CellType.FRIDGE);
+  const diary = findCell(cells, (cell) => cell.t === CellType.DIARY);
   return {
     width: 40,
     height: 40,

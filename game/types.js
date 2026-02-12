@@ -4,7 +4,6 @@
 /** @typedef {string} PlayerItem */
 /** @typedef {string} PlayerID */
 /** @typedef {Record<string, any>} Cell */
-/** @typedef {string} CellType */
 
 /** @enum { 'UP' | 'LEFT' | 'DOWN' | 'RIGHT' } */
 const Direction = {
