@@ -3,11 +3,26 @@
  * @import { EffectDefinition } from './effects';
  */
 
-/** @enum {'鞋子' | '鍋子' | '禮物'} */
+/**
+ * @enum { '鞋子' |
+ *  '鍋子' |
+ *  '裝水的鍋子' |
+ *  '禮物' |
+ *  '垃圾' |
+ *  '整包垃圾' |
+ *  '火' |
+ *  '火鍋料'
+ * }
+ */
 const GameItem = {
   'SHOES' : '鞋子',
   'POT' : '鍋子',
+  'FILLED_POT' : '裝水的鍋子',
   'GIFT' : '禮物',
+  'TRASH' : '垃圾',
+  'TRASH_BAG' : '整包垃圾',
+  'FIRE' : '火',
+  'POT_MAT' : '火鍋料',
 };
 
 /**

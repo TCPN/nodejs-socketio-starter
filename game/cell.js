@@ -8,6 +8,7 @@
  * '桌' |
  * '椅' |
  * '几' |
+ * '電話' |
  * '日記' |
  * '冰箱' |
  * '月曆' |
@@ -39,6 +40,7 @@ const CellType = {
   TABLE: '桌',
   CHAIR: '椅',
   TEA_TABLE: '几',
+  PHONE: '電話',
   DIARY: '日記',
   FRIDGE: '冰箱',
   CALENDAR: '月曆',

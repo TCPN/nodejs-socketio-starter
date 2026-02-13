@@ -18,14 +18,15 @@ const mapObjects = {
   '几': { block: true, effects: [effects.TAKE_POT] },
   '日記': { block: true, effects: [effects.DIARY] },
   '冰箱': { block: true },
-  '月曆': { block: true },
+  '月曆': { block: true, effects: [effects.READ_CALENDAR] },
   '衣櫃': { block: true },
   '床': { block: false, effects: [effects.BED_SLEEP] },
   '櫃': { block: true },
+  '電話': { block: true, effects: [effects.PHONE_CALL] },
   '槽': { block: true },
   '馬桶': { block: false, effects: [effects.TOILET] },
   '浴缸': { block: false, effects: [effects.BATHTUB] },
-  '桶': { block: true },
+  '桶': { block: true, effects: [] },
   '台': { block: true },
   '爐': { block: true },
   '書': { block: true },
@@ -33,10 +34,10 @@ const mapObjects = {
   '樹': { block: true },
   '人': { block: true },
   '蟲': { block: true },
-  '劍': { block: true },
+  '劍': { block: true, effects: [effects.SWORD] },
   '金': { block: false },
   '銀': { block: false },
-  '按鈕': { block: true },
+  '按鈕': { block: true, effects: [effects.BUTTON] },
 };
 
 module.exports = {
@@ -306,7 +307,7 @@ function getCells() {
     cells[11][7] = makeCell("牆");
     cells[11][8] = makeCell("花");
     cells[11][10] = makeCell("牆");
-    cells[11][11] = makeCell("話機");
+    cells[11][11] = makeCell("電話");
     cells[11][14] = makeCell("椅");
     cells[11][15] = makeCell("桌");
     cells[11][16] = makeCell("牆");
