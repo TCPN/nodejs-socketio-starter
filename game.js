@@ -95,7 +95,7 @@ function execChooseTriggerEffects(state, {
   // TODO: consider effects stored at other places
   // const effects = willTrigger(state, toward);
   for (const effect of state.timelyEffects ?? []) {
-    if (!effect.enabled || canTriggerWith(effect, 'CHOOSE')) {
+    if (!effect.enabled || !canTriggerWith(effect, 'CHOOSE')) {
       continue;
     }
     const targetPlayerIds = getEffectTargetPlayerIds(state, effect.target);
@@ -130,7 +130,7 @@ function execResolveTypeEffects(state, {
 }) {
   // TODO: consider effects stored at other places
   for (const effect of state.timelyEffects ?? []) {
-    if (!effect.enabled || canTriggerWith(effect, 'RESOLVE')) {
+    if (!effect.enabled || !canTriggerWith(effect, 'RESOLVE')) {
       continue;
     }
     if (effect.trigger.direction !== action) {
@@ -173,7 +173,7 @@ function execInteractTriggerEffects(state, {
   }).flat(2) ?? [];
   // TODO: consider effects stored at other places
   for (const effect of cellEffects.concat(itemsEffects)) {
-    if (!effect.enabled || canTriggerWith(effect, 'INTERACT')) {
+    if (!effect.enabled || !canTriggerWith(effect, 'INTERACT')) {
       continue;
     }
     effect.effectFn?.(state, {
@@ -206,7 +206,7 @@ function execStandTriggerEffects(state, {
   }).flat(2) ?? [];
   // TODO: consider effects stored at other places
   for (const effect of cellEffects.concat(itemsEffects)) {
-    if (!effect.enabled || canTriggerWith(effect, 'STAND')) {
+    if (!effect.enabled || !canTriggerWith(effect, 'STAND')) {
       continue;
     }
     effect.effectFn?.(state, {
