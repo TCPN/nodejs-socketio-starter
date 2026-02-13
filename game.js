@@ -33,15 +33,15 @@ function transformState(state, action, vote) {
   const position = getCurrentPosition(state);
   const map = getCurrentMap(state);
   const toward = getTowardPosition(position.coord, action);
-  if (!position || !map || !toward) {
+  if (!position || !map) {
     console.error('Invalid character position:', position, { ...map, cells: 'skipped' }, toward )
     return state;
   }
   let interactPos = null;
   let standPos = null;
-  if (canGoto(map, toward)) {
+  if (toward && canGoto(map, toward)) {
     position.coord = toward;
-  } else {
+  } else if (toward) {
     interactPos = getPosition(state, map, toward);
   }
   standPos = getPosition(state, map, position.coord);
