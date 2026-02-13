@@ -49,7 +49,7 @@ function getScoreEffectMarkText(effect) {
  * @returns {boolean}
  */
 function isScoreEffectToFaction(effect, faction) {
-  return effect.labels.includes('score') && effect.target === faction;
+  return effect.labels?.includes('score') && effect.target === faction;
 }
 
 /**
@@ -247,8 +247,14 @@ function onMousedownMap(event) {
           <span> {{ gameState.life }}</span>
         </div>
         <div :class="$style['player-status-item']">
-          <label>{{ gameState.messages?.length > 0 ? '訊息: ' : ''}}</label>
-          <span>{{ gameState.messages?.join('\n') ?? '' }}</span>
+          <!-- <label>{{ gameState.messages?.length > 0 ? '訊息: ' : ''}}</label> -->
+          <ul>
+            <li
+              v-for="msg in gameState.messages"
+            >
+              {{ msg }}
+            </li>
+          </ul>
         </div>
         <!-- <div :class="$style['player-status-item']">
           <label>分數</label>
