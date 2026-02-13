@@ -27,12 +27,12 @@
  * }} GameMap
  */
 
-/** @enum { 'UP' | 'LEFT' | 'DOWN' | 'RIGHT' } */
+/** @enum { 'U' | 'L' | 'D' | 'R' } */
 const Direction = {
-  UP: 'UP',
-  LEFT: 'LEFT',
-  DOWN: 'DOWN',
-  RIGHT: 'RIGHT',
+  U: 'U',
+  L: 'L',
+  D: 'D',
+  R: 'R',
 };
 
 module.exports = {
