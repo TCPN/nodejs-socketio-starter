@@ -8,6 +8,10 @@ import { useCountDown } from './useCountDown.js';
 import CountDown from './components/CountDown.vue';
 import { Factions } from './const.js';
 
+/**
+ * @import { EffectDefinition } from '../../game/effects.js';
+ */
+
 const userStore = useUserStore();
 const { allPlayers } = storeToRefs(userStore);
 const onlinePlauers = computed(() => Object.values(allPlayers.value).filter(player => player.status === 'online'));
@@ -26,8 +30,35 @@ const map = computed(() => {
   return state.maps[position.map];
 });
 
-function getScoreMarkText(effectContent) {
-  return effectContent.replace('分數', '').replace('*', '×').replace('/', '÷').trim();
+/**
+ * @param {EffectDefinition} effect
+ * @returns {string}
+ */
+function getScoreEffectText(effect) {
+  return typeof effect === 'string' ? effect : (effect.text || effect.name);
+}
+
+function getScoreEffectMarkText(effect) {
+  const text = getScoreEffectText(effect);
+  return text.replace('分數', '').replace('*', '×').replace('/', '÷').trim();
+}
+
+/**
+ * @param {EffectDefinition} effect
+ * @param {PlayerFaction} faction
+ * @returns {boolean}
+ */
+function isScoreEffectToFaction(effect, faction) {
+  return effect.labels.includes('score') && effect.target === faction;
+}
+
+/**
+ * @param {PlayerFaction} faction
+ * @param {EffectDefinition[]} effects
+ * @returns {EffectDefinition | null}
+ */
+function getScoreEffectOfFaction(faction, effects) {
+  return effects.find(eff => isScoreEffectToFaction(eff, faction)) ?? null;
 }
 
 const playerPosition = computed(() => {
@@ -81,7 +112,7 @@ function onMousedownMap(event) {
     :class="$style['before-game-panel']"
   >
     <span v-if="!hasSync">連線中...</span>
-    <button 
+    <button
       v-else
       @click="gameStore.startGame"
     >
@@ -198,12 +229,12 @@ function onMousedownMap(event) {
                 v-for="faction in Factions"
               >
                 <div
-                  v-if="cell.effects?.[faction]?.startsWith('分數')"
+                  v-if="cell.effects && getScoreEffectOfFaction(faction, cell.effects)"
                   :class="[$style['score-mark']]"
                   :data-faction="faction"
-                  v-tooltip="`${faction} 陣營 ${cell.effects[faction]}`"
+                  v-tooltip="`${faction} 陣營 ${getScoreEffectText(getScoreEffectOfFaction(faction, cell.effects))}`"
                 >
-                  {{ getScoreMarkText(cell.effects?.[faction]) }}
+                  {{ getScoreEffectMarkText(getScoreEffectOfFaction(faction, cell.effects)) }}
                 </div>
               </template>
             </div>
@@ -236,7 +267,7 @@ function onMousedownMap(event) {
           :key="item"
           :class="$style['items-panel-item']"
         >
-          <img 
+          <img
             height="72px"
             width="72px"
             :alt="item"

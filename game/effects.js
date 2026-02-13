@@ -63,11 +63,13 @@ const EffectTriggerType = {
 /**
  * @typedef {{
  *  name: string,
+ *  labels?: string[],
  *  visible?: PlayerID | PlayerFaction | 'all',
  *  enabled?: boolean,
  *  enableCondition?: EffectEnableCondition,
  *  trigger: EffectTrigger,
  *  effectFn: EffectFn<void>,
+ *  target?: PlayerID | PlayerFaction,
  * }} EffectDefinition
  */
 
@@ -125,6 +127,7 @@ const makeScoreEffect = (expr, target) => {
   const scoreChangerFn = getScoreChangerFnByExpr(expr);
   return {
     name: '分數' + expr,
+    labels: 'score',
     enableCondition: { target },
     effectFn: (state, cell, dir) => {
       // find target players
@@ -135,7 +138,8 @@ const makeScoreEffect = (expr, target) => {
       // update target players scores
       target.score = scoreChangerFn(target.score ?? 0);
     },
-  }
+    target: target,
+  };
 };
 
 /** @type {Record<ScoreChangeOp, (oprand: number) => ((score: number) => number)>} */

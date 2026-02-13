@@ -33,7 +33,7 @@ function transformState(state, action) {
   }
   const effects = willTrigger(state, toward);
   for (const effect of effects.global ?? []) {
-    const name = effect.text ?? effect;
+    const name = effect.name ?? effect;
     if (name === '看日記') {
       state.messages.push('日記：沒想到下禮拜天就是 40 歲生日了，真是不得了，去拿蛋糕出來放在茶几上準備慶祝吧');
     } else if (name === '拿蛋糕') {
