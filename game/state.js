@@ -1,22 +1,28 @@
+
+/** @import { GameMap } from './types' */
+
+/** @typedef {[row: number, col: number]} Coord */
+
 /**
  * @typedef {{
  *   map: RoomEnum,
- *   pos: [row: number, col: number],
- * }} CharacterMapPosition
+ *   pos: Coord,
+ * }} Position
  */
+
 /**
  * @typedef {{
  *  id?: PlayerID,
  *  faction: PlayerFaction,
  *  score: number,
- *  items?: PlayerItem[],
+ *  items?: GameItem[],
  * }} PlayerState
  */
 
 /**
  * @typedef {{
- *   maps: Record<RoomEnum, Cell[][]>,
- *   position: CharacterMapPosition[],
+ *   maps: Record<RoomEnum, GameMap>,
+ *   position: Position[],
  *   score: number,
  *   life: number,
  *   items: GameItem[],

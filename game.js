@@ -1,78 +1,90 @@
 const { removeFromArray } = require("./array.js");
-const { enumFromStrings } = require("./enum.js");
-const { gameItems } = require("./gameItems.js");
-const { getRoomMap, mapObjects } = require("./getRoomMap.js");
 const { createLogger } = require("./logger.js");
 const { randomPick } = require("./random.js");
 const log = createLogger('game');
 
+const { gameItems } = require("./gameItems.js");
+const { getRoomMap, isCellBlocking } = require("./getRoomMap.js");
 const { Factions } = require('./client/src/const.js');
+const { Direction } = require("./game/types.js");
 
-const Direction = enumFromStrings([
-  'U',
-  'L',
-  'D',
-  'R',
-]);
+/**
+ * @import { PlayerID, PlayerFaction } from './types';
+ */
 
+/** @typedef {Direction} GameAction */
+
+/**
+ * @param {GameState} state
+ * @param {GameAction} action
+ * @returns {GameState}
+ */
 function transformState(state, action) {
-  if (state === null) {
-    return {}
+  if (!(action in Direction)) {
+    console.error('Invalid action:', action);
+    return state;
   }
-  if (action in Direction) {
-    state.messages = [];
-    const position = getCurrentPositionState(state);
-    const map = getCurrentMap(state);
-    const toward = getTowardPosition(position.pos, action);
-    if (canGoto(map, toward)) {
-      position.pos = toward;
-    }
-    const effects = willTrigger(state, toward);
-    for (const effect of effects.global ?? []) {
-      const name = effect.text ?? effect;
-      if (name === '看日記') {
-        state.messages.push('日記：沒想到下禮拜天就是 40 歲生日了，真是不得了，去拿蛋糕出來放在茶几上準備慶祝吧');
-      } else if (name === '拿蛋糕') {
-        state.items.push(gameItems.CAKE);
-        const fridgeItems = state.maps.room.getFridge().cell.items ??= [];
-        removeFromArray(fridgeItems, gameItems.CAKE);
-      } else if (name === '放蛋糕') {
-        removeFromArray(state.items, gameItems.CAKE);
-        const itemsOfTable = state.maps.room.getTable().cell.items ??= [];
-        itemsOfTable.push(gameItems.CAKE);
-      } else if (name === '撞牆') {
-        state.life -= 4;
-        state.messages.push('撞牆受傷，扣 4 點生命值');
-      } else if (name.startsWith('分數')) {
-        const delta = parseInt(name.slice(2));
-        state.score += delta;
-        state.messages.push(`獲得 ${delta} 分`);
-      }
-    }
-    for (const [target, effect] of Object.entries(effects.private ?? {})) {
-      const name = effect.text ?? effect;
-      const targetPlayerIds = getEffectTargetPlayerIds(state, target);
-      if (name.startsWith('分數')) {
-        const delta = parseInt(name.slice(2));
-        for (const targetPlayerId of targetPlayerIds) {
-          state.players[targetPlayerId].score += delta;
-          state.players[targetPlayerId].messages ??= [];
-          state.players[targetPlayerId].messages.push(`你自己獲得 ${delta} 分`);
-        }
-      } else if (name === '道具') {
-        console.warn('「道具」還沒實作');
-      }
+  state.messages = [];
+  const position = getCurrentPosition(state);
+  const map = getCurrentMap(state);
+  const toward = getTowardPosition(position.pos, action);
+  if (canGoto(map, toward)) {
+    position.pos = toward;
+  }
+  const effects = willTrigger(state, toward);
+  for (const effect of effects.global ?? []) {
+    const name = effect.text ?? effect;
+    if (name === '看日記') {
+      state.messages.push('日記：沒想到下禮拜天就是 40 歲生日了，真是不得了，去拿蛋糕出來放在茶几上準備慶祝吧');
+    } else if (name === '拿蛋糕') {
+      state.items.push(gameItems.CAKE);
+      const fridgeItems = state.maps.room.getFridge().cell.items ??= [];
+      removeFromArray(fridgeItems, gameItems.CAKE);
+    } else if (name === '放蛋糕') {
+      removeFromArray(state.items, gameItems.CAKE);
+      const itemsOfTable = state.maps.room.getTable().cell.items ??= [];
+      itemsOfTable.push(gameItems.CAKE);
+    } else if (name === '撞牆') {
+      state.life -= 4;
+      state.messages.push('撞牆受傷，扣 4 點生命值');
+    } else if (name.startsWith('分數')) {
+      const delta = parseInt(name.slice(2));
+      state.score += delta;
+      state.messages.push(`獲得 ${delta} 分`);
     }
   }
+
+  for (const [target, effect] of Object.entries(effects.private ?? {})) {
+    const name = effect.text ?? effect;
+    const targetPlayerIds = getEffectTargetPlayerIds(state, target);
+    if (name.startsWith('分數')) {
+      const delta = parseInt(name.slice(2));
+      for (const targetPlayerId of targetPlayerIds) {
+        state.players[targetPlayerId].score += delta;
+        state.players[targetPlayerId].messages ??= [];
+        state.players[targetPlayerId].messages.push(`你自己獲得 ${delta} 分`);
+      }
+    } else if (name === '道具') {
+      console.warn('「道具」還沒實作');
+    }
+  }
+
   const finishGoal = checkGoal(state);
   if (finishGoal) {
     state.end = 'success';
   } else if (state.life <= 0) {
     state.end = 'failed';
   }
+
   return state;
 }
 
+/**
+ *
+ * @param {GameState} state
+ * @param {PlayerID | PlayerFaction | 'all'} target
+ * @returns
+ */
 function getEffectTargetPlayerIds(state, target) {
   const playerIds = Object.keys(state.players);
   if (target === 'all') {
@@ -84,16 +96,22 @@ function getEffectTargetPlayerIds(state, target) {
   }
 }
 
+/** @typedef {{ canGo: boolean, willTrigger: ReturnType<typeof willTrigger> }} GameActionInfo */
+
+/**
+ * @param {GameState} state
+ * @param {GameAction} action
+ * @returns {GameActionInfo | undefined}
+ */
 function getActionInfo(state, action) {
   if (!(action in Direction)) {
     return;
   }
-  const position = getCurrentPositionState(state);
+  const position = getCurrentPosition(state);
   if (!position) {
     return;
   }
-  const map = state.maps[position.map];
-  const [r, c] = position.pos;
+  const map = getMap(state, position.map);
   const toward = getTowardPosition(position.pos, action);
   return {
     canGo: canGoto(map, toward),
@@ -101,6 +119,11 @@ function getActionInfo(state, action) {
   };
 }
 
+/**
+ * @param {Coord} coord
+ * @param {Direction} direction
+ * @returns {Coord}
+ */
 function getTowardPosition([r, c], direction) {
   switch (direction) {
     case Direction.U:
@@ -114,28 +137,86 @@ function getTowardPosition([r, c], direction) {
   }
 }
 
-function getCurrentPositionState(state) {
+
+/**
+ * @param {GameState} state
+ * @returns {Cell | null}
+ */
+function getCurrentCell(state) {
+  return getCurrentCellWithPosition(state)?.cell ?? null;
+}
+
+/** @typedef {{ mapId: RoomEnum, row: number, col: number, cell: Cell | null }} CellWithPosition */
+
+/**
+ * @param {GameState} state
+ * @returns {CellWithPosition}
+ */
+function getCurrentCellWithPosition(state) {
+  const position = getCurrentPosition(state);
+  if (!position) {
+    console.error('game state lacks character position info');
+  }
+  const mapId = position?.map ?? 'main';
+  const map = getMap(state, mapId);
+  const coord = position?.pos ?? map?.getDefaultCoord();
+  const cell = (map.cells?.at(coord[0])?.at([coord[1]])) ?? null;
+  if (!cell) {
+    console.error('character not in a cell');
+  }
+  return {
+    mapId: mapId,
+    row: coord[0],
+    col: coord[1],
+    cell: cell,
+  };
+}
+
+/**
+ * @param {GameState} state
+ * @returns {Position | undefined}
+ */
+function getCurrentPosition(state) {
   const position = state.position.at(-1);
   if (!position) {
-    console.error('game state lacks position info');
+    console.error('game state lacks character position info');
     return;
   }
   return position;
 }
 
+/**
+ * @param {GameState} state
+ * @returns {GameMap | undefined}
+ */
 function getCurrentMap(state) {
-  const position = getCurrentPositionState(state);
+  const position = getCurrentPosition(state);
   if (!position) {
     return;
   }
-  const map = state.maps[position.map];
+  const map = getMap(state, position.map);
   return map;
 }
 
-function canGoto(map, pos) {
-  const [r, c] = pos;
+/**
+ * @param {GameState} state
+ * @param {RoomEnum} mapId
+ * @returns {GameMap | undefined}
+ */
+function getMap(state, mapId) {
+  return state.maps[mapId];
+}
+
+/**
+ *
+ * @param {GameMap} map
+ * @param {Coord} coord
+ * @returns {boolean}
+ */
+function canGoto(map, coord) {
+  const [r, c] = coord;
   const cell = map.cells[r][c];
-  if (mapObjects[cell.t]?.block || cell.block) {
+  if (isCellBlocking(cell)) {
     return false;
   }
   if (r < 0 || r >= map.height || c < 0 || c >= map.width) {
@@ -144,30 +225,20 @@ function canGoto(map, pos) {
   return true;
 }
 
-function willTrigger(state, pos) {
+/**
+ *
+ * @param {GameState} state
+ * @param {Coord} coord
+ * @returns {{ global: EffectDefinition[], private: { [f: PlayerFaction]: EffectDefinition[] }}}
+ */
+function willTrigger(state, coord) {
   const map = getCurrentMap(state);
-  const [r, c] = pos;
+  const [r, c] = coord;
   const cell = map.cells[r][c];
-  const effects = {};
-  switch (cell.t) {
-    case '日記':
-      effects.global = ['看日記'];
-      break;
-    case '冰箱':
-      if (cell.items?.includes(gameItems.CAKE)) {
-        effects.global = ['拿蛋糕'];
-      }
-      break;
-    case '几':
-      if (state.items?.includes(gameItems.CAKE)) {
-        effects.global = ['放蛋糕'];
-      }
-      break;
-    case '牆':
-      effects.global = ['撞牆'];
-      break;
-  }
-  
+  const effects = {
+    global: cell?.effects ?? [],
+  };
+
   for (let target in cell.effects ?? {}) {
     effects.private ??= {};
     effects.private[target] = cell.effects[target];
@@ -175,11 +246,10 @@ function willTrigger(state, pos) {
   return effects;
 }
 
-// enum CellType {
-//   BLANK,
-//   WALL,
-// }
-
+/**
+ * @param {PlayerID[]} players
+ * @returns {GameState}
+ */
 function initGameState(players) {
   return {
     maps: {
@@ -201,12 +271,19 @@ function initGameState(players) {
   };
 }
 
+/**
+ * @param {GameState} state
+ * @returns {boolean}
+ */
 function checkGoal(state) {
   return state.maps.room.getTable()?.cell.items?.includes(gameItems.CAKE);
 }
 
 // players
 
+/**
+ * @returns {PlayerFaction}
+ */
 function decideFaction() {
   return randomPick(Object.keys(Factions));
 }

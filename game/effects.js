@@ -1,8 +1,11 @@
-module.exports = {
-  getCellEffects,
-  mapObjects,
-};
+/**
+ * @import { PlayerID, PlayerFaction } from './types';
+ */
 
+/**
+ * @param {Cell} cell
+ * @returns {EffectDefinition}
+ */
 function getCellEffects(cell) {
   const effects = {};
   switch (cell.t) {
@@ -60,7 +63,7 @@ const EffectTriggerType = {
 /**
  * @typedef {{
  *  name: string,
- *  visible?: PlayerID | PlayerFaction | 'PUBLIC',
+ *  visible?: PlayerID | PlayerFaction | 'all',
  *  enabled?: boolean,
  *  enableCondition?: EffectEnableCondition,
  *  trigger: EffectTrigger,
@@ -149,4 +152,19 @@ const getScoreChangerFnByExpr = (expr) => {
   const op = expr[0];
   const oprand = Number(expr.substr(1));
   return scoreChangerFnMaker[op](oprand);
+};
+
+const effects = {
+  DIARY,
+  TAKE_CAKE,
+  PUT_CAKE,
+  HIT_WALL,
+
+  makeScoreEffect,
+};
+
+module.exports = {
+  getCellEffects,
+  mapObjects,
+  effects,
 };

@@ -1,8 +1,18 @@
 const { removeFromArray, transferItem } = require("./array");
 const { Factions } = require("./client/src/const");
+const { effects } = require("./game/effects");
 const { gameItems } = require("./gameItems");
 
-/** @enum  */
+/**
+ * @enum { '' |
+ * '牆' |
+ * '柵' |
+ * '桌' |
+ * '几' |
+ * '日記' |
+ * '冰箱'
+ * }
+ */
 const CellType = {
   WALL: '牆',
   FENCE: '柵',
@@ -22,13 +32,31 @@ const mapObjects = {
 
 module.exports = {
   getRoomMap,
+  isCellBlocking,
   mapObjects,
+  CellType,
 };
 
-function findCell(cells, cond) {
+/**
+ * @param {Cell}
+ * @returns {boolean}
+ */
+function isCellBlocking(cell) {
+  return mapObjects[cell.t]?.block || cell.block;
+}
+
+/**
+ * @param {Cell[][]} cells
+ * @param {CellType | (Cell) => boolean} condition
+ * @returns
+ */
+function findCell(cells, condition) {
+  if (typeof condition === 'string') {
+    condition = (cell) => cell.t === condition;
+  }
   for (let r = 0; r < cells.length; r++) {
     for (let c = 0; c < cells[r].length; c++) {
-      if (cond(cells[r][c])) {
+      if (condition?.(cells[r][c])) {
         return { row: r, col: c, cell: cells[r][c] };
       }
     }
@@ -36,20 +64,34 @@ function findCell(cells, cond) {
   return null;
 }
 
+/**
+ * @returns {GameMap}
+ */
 function getRoomMap() {
   const cells = getCells();
   const table = findCell(cells, (cell) => cell.t === CellType.TEA_TABLE);
   const fridge = findCell(cells, (cell) => cell.t === CellType.FRIDGE);
   const diary = findCell(cells, (cell) => cell.t === CellType.DIARY);
   return {
-    width: 40,
-    height: 40,
+    width: 28,
+    height: 29,
     cells,
     getTable: () => table,
     getFridge: () => fridge,
   };
 }
 
+/**
+ * @param {Cell[][]} cells
+ */
+function applyEffects(cells) {
+  const diary = findCell(cells, CellType.DIARY);
+  diary.effects = [effects.DIARY];
+}
+
+/**
+ * @returns {Cell[][]}
+ */
 function getCells() {
   const cells = Array.from({ length: 40 }, (_, i) =>
       Array.from({ length: 40 }, (_, j) =>
