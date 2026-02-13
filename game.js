@@ -113,7 +113,7 @@ function getActionInfo(state, action) {
     return;
   }
   const map = getMap(state, position.mapId);
-  const toward = getTowardPosition(position.pos, action);
+  const toward = getTowardPosition(position.coord, action);
   return {
     canGo: canGoto(map, toward),
     willTrigger: willTrigger(state, toward),
@@ -160,7 +160,7 @@ function getCurrentCellWithPosition(state) {
   }
   const mapId = position?.mapId ?? 'main';
   const map = getMap(state, mapId);
-  const coord = position?.pos ?? map?.getDefaultCoord();
+  const coord = position?.coord ?? map?.getDefaultCoord();
   const cell = (map.cells?.at(coord[0])?.at([coord[1]])) ?? null;
   if (!cell) {
     console.error('character not in a cell');
@@ -175,7 +175,7 @@ function getCurrentCellWithPosition(state) {
 
 /**
  * @param {GameState} state
- * @returns {Position | undefined}
+ * @returns {PlayerPosition | undefined}
  */
 function getCurrentPosition(state) {
   const position = state.position.at(-1);

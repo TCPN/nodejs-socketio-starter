@@ -6,8 +6,8 @@
 /**
  * @typedef {{
  *   mapId: MapId,
- *   pos: Coord,
- * }} Position
+ *   coord: Coord,
+ * }} PlayerPosition
  */
 
 /**
@@ -22,7 +22,7 @@
 /**
  * @typedef {{
  *   maps: Record<MapId, GameMap>,
- *   position: Position[],
+ *   position: PlayerPosition[],
  *   score: number,
  *   life: number,
  *   items: GameItem[],

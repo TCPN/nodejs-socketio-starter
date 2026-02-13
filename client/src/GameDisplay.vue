@@ -27,7 +27,7 @@ const map = computed(() => {
   if (!position) {
     return [];
   }
-  return state.maps[position.map];
+  return state.maps[position.mapId];
 });
 
 /**
@@ -61,13 +61,13 @@ function getScoreEffectOfFaction(faction, effects) {
   return effects.find(eff => isScoreEffectToFaction(eff, faction)) ?? null;
 }
 
-const playerPosition = computed(() => {
+const playerCoord = computed(() => {
   const state = gameState.value;
   const position = state?.position.at(-1);
   if (!position) {
     return null;
   }
-  return position.pos;
+  return position.coord;
 });
 
 const countDown = useCountDown();
@@ -79,14 +79,14 @@ watch(currentVote, () => {
 const mapViewerRef = useTemplateRef('map-viewer');
 const playerMarkRef = useTemplateRef('player-mark');
 
-watch(playerPosition, scrollPlayerToCenter);
+watch(playerCoord, scrollPlayerToCenter);
 
 async function scrollPlayerToCenter() {
-  const pos = playerPosition.value;
-  if (!pos) {
+  const coord = playerCoord.value;
+  if (!coord) {
     return;
   }
-  const [r, c] = pos;
+  const [r, c] = coord;
   await nextTick();
   if (!playerMarkRef.value) {
     return;
@@ -218,7 +218,7 @@ function onMousedownMap(event) {
                 {{ cell.t }}
               </div>
               <div
-                v-if="playerPosition[0] === r && playerPosition[1] === c"
+                v-if="playerCoord[0] === r && playerCoord[1] === c"
                 ref="player-mark"
                 :class="$style['player-mark']"
                 data-player-mark
