@@ -69,6 +69,7 @@ function transformState(state, action, vote) {
   //     console.warn('「道具」還沒實作');
   //   }
   // }
+  state.timelyEffects = [];
 
   const finishGoal = checkGoal(state);
   if (finishGoal) {
