@@ -29,11 +29,12 @@ function getCellEffects(cell) {
   return effects;
 }
 
-/** @enum {'CHOOSE' | 'RESOLVE' | 'CONTACT'} */
+/** @enum {'CHOOSE' | 'RESOLVE' | 'INTERACT' | 'STAND'} */
 const EffectTriggerType = {
   CHOOSE: 'CHOOSE',
   RESOLVE: 'RESOLVE',
-  CONTACT: 'CONTACT',
+  INTERACT: 'INTERACT',
+  STAND: 'STAND',
 };
 
 /**
@@ -77,6 +78,7 @@ const EffectTriggerType = {
 const DIARY = {
   name: '看日記',
   enableCondition: { t: ['日記'] },
+  trigger: { type: EffectTriggerType.INTERACT },
   effectFn: (state) => {
     state.messages.push('日記：沒想到下禮拜天就是 40 歲生日了，真是不得了，去拿蛋糕出來放在茶几上準備慶祝吧');
   },
@@ -89,6 +91,7 @@ const TAKE_CAKE = {
       return cell && (cell.t === '冰箱' || cell.t === '桌' || cell.t === '几') && cell.items?.includes(gameItems.CAKE)
     },
   },
+  trigger: { type: EffectTriggerType.INTERACT },
   effectFn: (state, cell, dir) => {
     transferItem(gameItems.CAKE, cell.items ??= [], state.items);
   }
@@ -101,6 +104,7 @@ const PUT_CAKE = {
       return cell && (cell.t === '冰箱' || cell.t === '桌' || cell.t === '几') && state.items?.includes(gameItems.CAKE)
     },
   },
+  trigger: { type: EffectTriggerType.INTERACT },
   effectFn: (state, cell, dir) => {
     transferItem(gameItems.CAKE, state.items, cell.items ??= []);
   }
@@ -109,6 +113,7 @@ const PUT_CAKE = {
 const HIT_WALL = {
   name: '撞牆',
   enableCondition: { t: ['牆'] },
+  trigger: { type: EffectTriggerType.INTERACT },
   effectFn: (state, cell, dir) => {
     state.life -= 4;
     state.messages.push('撞牆受傷，扣 4 點生命值');
@@ -167,7 +172,46 @@ const effects = {
   makeScoreEffect,
 };
 
+
+/** shared with client */
+
+/**
+ * @param {EffectDefinition} effect
+ * @returns {string}
+ */
+function getScoreEffectText(effect) {
+  return typeof effect === 'string' ? effect : (effect.text || effect.name);
+}
+
+function getScoreEffectMarkText(effect) {
+  const text = getScoreEffectText(effect);
+  return text.replace('分數', '').replace('*', '×').replace('/', '÷').trim();
+}
+
+/**
+ * @param {EffectDefinition} effect
+ * @param {PlayerFaction} faction
+ * @returns {boolean}
+ */
+function isScoreEffectToFaction(effect, faction) {
+  return effect.labels.includes('score') && effect.target === faction;
+}
+
+/**
+ * @param {PlayerFaction} faction
+ * @param {EffectDefinition[]} effects
+ * @returns {EffectDefinition | null}
+ */
+function getScoreEffectOfFaction(faction, effects) {
+  return effects.find(eff => isScoreEffectToFaction(eff, faction)) ?? null;
+}
+
+
 module.exports = {
   getCellEffects,
   effects,
+  getScoreEffectText,
+  getScoreEffectMarkText,
+  isScoreEffectToFaction,
+  getScoreEffectOfFaction,
 };
