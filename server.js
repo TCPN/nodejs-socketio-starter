@@ -193,7 +193,7 @@ async function startServer() {
    * @param {{ voteId: string }} info
    */
   function endVote(info) {
-    const { voteId } = info;
+    const { voteId } = info ?? {};
     const vote = votes.find((vote) => vote.voteId === voteId);
     if (!vote) {
       return;
@@ -359,6 +359,10 @@ async function startServer() {
 
     socket.on("vote", (info, callback) => {
       log("[request] vote", info);
+      if (!info) {
+        callback();
+        return;
+      }
       const vote = votes.find((vote) => vote.voteId === info.voteId);
       if (vote && vote.paused !== true) {
         vote.votes ??= {};
