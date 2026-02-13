@@ -8,6 +8,33 @@ const { setupKeyboardShortcuts } = require("./serverHotkey.js");
 const { transformState, initGameState, getActionInfo } = require("./game.js");
 const { randomPick } = require("./random.js");
 
+const { Direction } = require("./game/types.js");
+
+/** @typedef {string} VoteID */
+/** @typedef {'game'} VoteSource */
+/** @typedef {'direction'} VoteKind */
+/** @typedef {number} VoteTimeout */
+/**
+ * @typedef {{
+ *  text: string,
+ *  itemId: string,
+ *  info: ReturnType<typeof getActionInfo>,
+ * }} VoteItem
+ */
+
+/**
+ * @typedef {{
+ *  voteId: VoteID,
+ *  index: number,
+ *  source: VoteSource,
+ *  kind: VoteKind,
+ *  items: VoteItem[],
+ *  timeout: VoteTimeout,
+ *  endTime?: number | null,
+ *  timeoutId?: NodeJS.Timeout,
+ * }} Vote
+ */
+
 // ref: https://chatgpt.com/s/t_687e7ff5a9908191a592f4b24c96233d
 
 const app = express();
@@ -40,9 +67,15 @@ async function startServer() {
   let nextVoteStartTimeoutID = null;
   let hostFullControl = false;
 
+  /** @type {number} */
   let voteTimeout = 10; // seconds
+  /** @type {number} */
   let voteInterval = 3; // seconds
 
+  /**
+   * @param {Vote} vote
+   * @returns {Vote & { timeoutId: undefined }}
+   */
   function makeVoteEmitSafe(vote) {
     return {
       ...vote,
@@ -50,11 +83,15 @@ async function startServer() {
     };
   }
 
+  /** @returns {boolean} */
   function isVoteRunning() {
     const lastVote = votes.at(-1);
     return lastVote && lastVote.finished !== true;
   }
 
+  /**
+   * @returns { Vote | undefined }
+   */
   function getCurrentVote() {
     return votes.at(-1);
   }
@@ -68,10 +105,18 @@ async function startServer() {
     }
   }
 
+  /**
+   * @param {Vote} vote
+   * @returns {number | null}
+   */
   function getVoteEndTime(vote) {
     return vote.timeout ? (Date.now() + vote.timeout * 1000) : null;
   }
 
+  /**
+   * @param {Vote} vote
+   * @returns  {boolean}
+   */
   function tryStartVote(vote) {
       if (isVoteRunning()) {
         return false;
@@ -88,17 +133,27 @@ async function startServer() {
       return true;
   }
 
+  /**
+   * @param {Vote} vote
+   * @param {number} timeout  ???
+   */
   function setVoteTimeout(vote, timeout) {
     vote.timeout = timeout;
     vote.endTime = getVoteEndTime(vote);
   }
 
+  /**
+   * @param {Vote} vote
+   */
   function pauseVote(vote) {
     stopVoteTimeout(vote);
     vote.paused = true;
     vote.remainTimeout = vote.endTime - Date.now();
   }
 
+  /**
+   * @param {Vote} vote
+   */
   function resumeVote(vote) {
     vote.paused = false;
     vote.endTime = Date.now() + vote.remainTimeout;
@@ -106,6 +161,10 @@ async function startServer() {
     tryStartVoteTimeout(vote);
   }
 
+  /**
+   * @param {Vote} vote
+   * @returns {boolean}
+   */
   function tryStartVoteTimeout(vote) {
     if (vote.timeout) {
       const remainTime = vote.endTime ? vote.endTime - Date.now() : vote.timeout * 1000;
@@ -117,11 +176,17 @@ async function startServer() {
     return false;
   }
 
+  /**
+   * @param {Vote} vote
+   */
   function stopVoteTimeout(vote) {
     clearTimeout(vote.timeoutId);
     delete vote.timeoutId;
   }
 
+  /**
+   * @param {{ voteId: string }} info
+   */
   function endVote(info) {
     const { voteId } = info;
     const vote = votes.find((vote) => vote.voteId === voteId);
@@ -155,6 +220,9 @@ async function startServer() {
     }
   }
 
+  /**
+   * @param {Direction | null} action
+   */
   function goToNextGameState(action) {
     transformState(gameState, action);
     io.emit("game state", gameState);
@@ -171,6 +239,10 @@ async function startServer() {
     startBetweenVoteTimeout();
   }
 
+  /**
+   * @param {Vote} vote
+   * @returns {Direction | null}
+   */
   function decideActionByVote(vote) {
     const allVotes = Object.values(vote.votes ?? {});
     const result = vote.items.map((item) => {
@@ -189,6 +261,9 @@ async function startServer() {
     return chosen.itemId;
   }
 
+  /**
+   * @returns {Vote}
+   */
   function makeGameVote(state) {
     const vote = {
       source: 'game',
