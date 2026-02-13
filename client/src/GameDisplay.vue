@@ -378,6 +378,7 @@ function onMousedownMap(event) {
   align-content: center;
 }
 .player-status-item {
+  visibility: visible; /* dummy */
 }
 .items-panel {
   height: 100px;
@@ -388,9 +389,10 @@ function onMousedownMap(event) {
   gap: 16px;
 }
 .items-panel-item {
+  visibility: visible; /* dummy */
 }
 .map {
-
+  visibility: visible; /* dummy */
 }
 .map-row {
   height: 50px;
