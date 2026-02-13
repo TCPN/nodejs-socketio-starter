@@ -81,7 +81,7 @@ const EffectTriggerType = {
  *  visible?: PlayerID | PlayerFaction | 'all',
  *  enabled?: boolean,
  *  enableCondition?: EffectEnableCondition,
- *  trigger: EffectTrigger,
+ *  trigger: EffectTrigger | EffectTrigger[],
  *  effectFn: EffectFn<void>,
  *  target?: PlayerID | PlayerFaction,
  * }} EffectDefinition
@@ -148,7 +148,7 @@ const makeScoreEffect = (expr, target) => {
     labels: 'score',
     enabled: true,
     enableCondition: { target },
-    trigger: { type: 'STAND' },
+    trigger: [{ type: 'STAND' }, { type: 'INTERACT' }],
     effectFn: (state, {}, effect) => {
       // find target players
       const playerIds = getEffectTargetPlayerIds(state, target);
@@ -224,6 +224,16 @@ function getScoreEffectOfFaction(faction, effects) {
   return effects.find(eff => isScoreEffectToFaction(eff, faction)) ?? null;
 }
 
+/**
+ * @param {EffectDefinition} effect
+ * @param {EffectTriggerType} triggerType
+ */
+function canTriggerWith(effect, triggerType) {
+  if (Array.isArray(effect.trigger)) {
+    return effect.trigger.includes(triggerType);
+  }
+  return effect.trigger.type === triggerType;
+}
 
 /**
  *
@@ -249,5 +259,6 @@ module.exports = {
   getScoreEffectMarkText,
   isScoreEffectToFaction,
   getScoreEffectOfFaction,
+  canTriggerWith,
   getEffectTargetPlayerIds,
 };
