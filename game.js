@@ -3,7 +3,7 @@ const { createLogger } = require("./logger.js");
 const { randomPick } = require("./random.js");
 const log = createLogger('game');
 
-const { gameItems, getItemObject } = require("./gameItems.js");
+const { GameItem, getItemObject } = require("./game/item.js");
 const { getMainMap, isCellBlocking } = require("./getRoomMap.js");
 const { Factions } = require('./client/src/const.js');
 const { Direction } = require("./game/types.js");
@@ -419,7 +419,7 @@ function initGameState(players) {
     },
     position: [{
       mapId: 'main',
-      coord: [15, 13],
+      coord: [14, 14],
     }],
     score: 0,
     life: 40,
@@ -427,7 +427,7 @@ function initGameState(players) {
       faction: decideFaction(),
       score: 0,
     }])),
-    items: [gameItems.CANDLE],
+    items: [],
     paused: false,
     end: false,
   };
@@ -438,7 +438,7 @@ function initGameState(players) {
  * @returns {boolean}
  */
 function checkGoal(state) {
-  return state.maps.main.getTable()?.cell.items?.includes(gameItems.CAKE);
+  return state.maps.main.getTable()?.cell.items?.includes(GameItem.POT);
 }
 
 // players

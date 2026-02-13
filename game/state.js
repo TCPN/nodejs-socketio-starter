@@ -2,6 +2,7 @@
 /**
  * @import { GameMap } from './types';
  * @import { EffectDefintion } from './effects';
+ * @import { GameItem } from './item';
  */
 
 

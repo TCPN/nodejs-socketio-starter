@@ -1,36 +1,12 @@
 const { getPlayer } = require('./state');
+const { CellType } = require('./cell');
 const { PlayerFaction } = require('./types');
+const { GameItem } = require('./item');
 
 /**
  * @import { PlayerID, PlayerFaction, Cell, Position } from './types';
+ * @import { GameState } from './state';
  */
-
-/**
- * @param {Cell} cell
- * @returns {EffectDefinition}
- */
-function getCellEffects(cell) {
-  const effects = {};
-  switch (cell.t) {
-    case '日記':
-      effects.global = ['看日記'];
-      break;
-    case '冰箱':
-      if (cell.items?.includes(gameItems.CAKE)) {
-        effects.global = ['拿蛋糕'];
-      }
-      break;
-    case '几':
-      if (state.items?.includes(gameItems.CAKE)) {
-        effects.global = ['放蛋糕'];
-      }
-      break;
-    case '牆':
-      effects.global = ['撞牆'];
-      break;
-  }
-  return effects;
-}
 
 /** @enum {'CHOOSE' | 'RESOLVE' | 'INTERACT' | 'STAND'} */
 const EffectTriggerType = {
@@ -87,49 +63,104 @@ const EffectTriggerType = {
  * }} EffectDefinition
  */
 
+/**
+ * @param {string} effectName
+ * @param {CellType} cellType
+ * @param {EffectTriggerType} triggerType
+ * @param {string} message
+ * @returns {EffectDefinition}
+ */
+function createPrintMessageEffect(effectName, cellType, triggerType, message) {
+  return {
+    name: effectName,
+    enabled: true,
+    enableCondition: { t: [cellType] },
+    trigger: { type: triggerType },
+    effectFn: (state) => {
+      state.messages.push(message);
+    },
+  };
+}
+
 /** @type {EffectDefinition} */
-const DIARY = {
-  name: '看日記',
-  enableCondition: { t: ['日記'] },
+const DIARY = createPrintMessageEffect('看日記', '日記', EffectTriggerType.INTERACT, '日記：2026/02/14 哇，馬上就是我 40 歲後迎接的第一個新年，會有什麼不同的感覺嗎？有點期待');
+const READ_CALENDAR = createPrintMessageEffect('看月曆', CellType.CALENDAR, EffectTriggerType.INTERACT, '生日是 7/13');
+const TOILET = createPrintMessageEffect('上廁所', CellType.TOILET, EffectTriggerType.STAND, '上個廁所');
+const BATHTUB = createPrintMessageEffect('洗澡', CellType.BATHTUB, EffectTriggerType.STAND, '洗個澡');
+const CHAIR = createPrintMessageEffect('坐下', CellType.CHAIR, EffectTriggerType.STAND, '坐一下');
+/** @type {EffectDefinition} */
+const BED_SLEEP = {
+  name: '睡覺',
+  enabled: true,
+  enableCondtion: { t: ['床'] },
+  trigger: { type: EffectTriggerType.STAND },
+  effectFn: (state) => {
+    state.messages.push('睡一下，恢復生命值 +1');
+    state.life = Math.min((state.life + 1) || 1, 40);
+  },
+};
+
+/** @type {EffectDefinition} */
+const OPEN_DOOR_WITHOUT_SHOES = {
+  name: '開門',
+  enabled: true,
+  enableCondition: { t: ['門'] },
   trigger: { type: EffectTriggerType.INTERACT },
   effectFn: (state) => {
-    state.messages.push('日記：沒想到下禮拜天就是 40 歲生日了，真是不得了，去拿蛋糕出來放在茶几上準備慶祝吧');
+    state.messages.push('出門要穿鞋子！');
   },
 };
 /** @type {EffectDefinition} */
-const TAKE_CAKE = {
-  name: '拿蛋糕',
-  enableCondition: {
-    fn: (state, cell, dir) => {
-      return cell && (cell.t === '冰箱' || cell.t === '桌' || cell.t === '几') && cell.items?.includes(gameItems.CAKE)
-    },
+const WEAR_SHOES = {
+  name: '穿鞋',
+  enabled: true,
+  enableCondition: { t: ['鞋'] },
+  trigger: { type: EffectTriggerType.STAND },
+  effectFn: (state, { standPos }, effect) => {
+    state.items.push('鞋子');
+    const cells = state.maps.main.cells;
+    standPos.cell.t = '';
+    cells[12][13].block = false;
+    cells[15][10].block = false;
+    cells[15][16].block = false;
+    cells[18][13].block = false;
+    effect.enabled = false;
   },
-  trigger: { type: EffectTriggerType.INTERACT },
-  effectFn: (state, cell, dir) => {
-    transferItem(gameItems.CAKE, cell.items ??= [], state.items);
-  }
 };
 /** @type {EffectDefinition} */
-const PUT_CAKE = {
-  name: '放蛋糕',
+const TAKE_POT = {
+  name: '拿放鍋子',
+  text: '拿鍋子',
+  enabled: true,
   enableCondition: {
     fn: (state, cell, dir) => {
-      return cell && (cell.t === '冰箱' || cell.t === '桌' || cell.t === '几') && state.items?.includes(gameItems.CAKE)
+      return cell && (cell.t === '冰箱' || cell.t === '桌' || cell.t === '几') && (cell.items?.includes(GameItem.POT) || state.items?.includes(GameItem.POT));
     },
   },
   trigger: { type: EffectTriggerType.INTERACT },
-  effectFn: (state, cell, dir) => {
-    transferItem(gameItems.CAKE, state.items, cell.items ??= []);
+  effectFn: (state, { interactPos }, effect) => {
+    const cell = interactPos?.cell;
+    if (!cell) {
+      return;
+    }
+    if (cell.items?.includes(GameItem.POT)) {
+      transferItem(GameItem.POT, cell.items, state.items ??= []);
+      effect.text = '放鍋子';
+    } else if (state.items?.includes(GameItem.POT)) {
+      transferItem(GameItem.POT, state.items, cell.items ??= []);
+      effect.text = '拿鍋子';
+    }
   }
 };
 /** @type {EffectDefinition} */
 const HIT_WALL = {
   name: '撞牆',
-  enableCondition: { t: ['牆'] },
+  enabled: true,
+  enableCondition: { t: ['牆', '柵', '柱'] },
   trigger: { type: EffectTriggerType.INTERACT },
   effectFn: (state, cell, dir) => {
     state.life -= 4;
-    state.messages.push('撞牆受傷，扣 4 點生命值');
+    state.messages.push('撞牆受傷，生命 -4');
   }
 };
 
@@ -183,9 +214,14 @@ const getScoreChangerFnByExpr = (expr) => {
 
 const effects = {
   DIARY,
-  TAKE_CAKE,
-  PUT_CAKE,
   HIT_WALL,
+  WEAR_SHOES,
+  TAKE_POT,
+  READ_CALENDAR,
+  CHAIR,
+  TOILET,
+  BATHTUB,
+  BED_SLEEP,
 
   makeScoreEffect,
 };
@@ -230,7 +266,7 @@ function getScoreEffectOfFaction(faction, effects) {
  */
 function canTriggerWith(effect, triggerType) {
   if (Array.isArray(effect.trigger)) {
-    return effect.trigger.includes(triggerType);
+    return effect.trigger.find(t => t.type === triggerType);
   }
   return effect.trigger.type === triggerType;
 }
@@ -253,7 +289,6 @@ function getEffectTargetPlayerIds(state, target) {
 }
 
 module.exports = {
-  getCellEffects,
   effects,
   getScoreEffectText,
   getScoreEffectMarkText,

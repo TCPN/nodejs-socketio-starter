@@ -1,10 +1,10 @@
 /**
  * @import { EffectDefinition } from './effects';
- * @import { CellType } from '../getRoomMap';
+ * @import { CellType } from './cell';
+ * @import { GameItem } from './item';
  */
 
 /** @typedef {string} MapId */
-/** @typedef {string} GameItem */
 /** @typedef {string} PlayerID */
 
 /**
@@ -13,6 +13,8 @@
  *  effects?: EffectDefinition[],
  *  items?: GameItem[],
  *  location?: { row: number, col: number, mapId: MapId },
+ *  block?: boolean,
+ *  blockFn?: (state: GameState) => boolean,
  *  [k: string]: any,
  * }} Cell
  */

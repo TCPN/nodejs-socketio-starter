@@ -1,53 +1,76 @@
-const { removeFromArray, transferItem } = require("./array");
 const { Factions } = require("./client/src/const");
 const { effects } = require("./game/effects");
-const { gameItems } = require("./gameItems");
+const { CellType } = require("./game/cell");
 
 /**
- * @enum { '' |
- * '牆' |
- * '柵' |
- * '桌' |
- * '几' |
- * '日記' |
- * '冰箱'
- * }
+ * @import { Position } from "./game/types";
+ * @import { EffectDefinition } from "./game/effects";
+ * @import { GameState } from "./game/state";
  */
-const CellType = {
-  WALL: '牆',
-  FENCE: '柵',
-  TABLE: '桌',
-  TEA_TABLE: '几',
-  DIARY: '日記',
-  FRIDGE: '冰箱',
-};
 
 const mapObjects = {
-  '牆': { block: true },
-  '桌': { block: true },
-  '几': { block: true },
-  '日記': { block: true },
+  '牆': { block: true, effects: [effects.HIT_WALL] },
+  '柵': { block: true, effects: [effects.HIT_WALL] },
+  '柱': { block: true, effects: [effects.HIT_WALL] },
+  '門': { block: true },
+  '桌': { block: true, effects: [effects.TAKE_POT] },
+  '椅': { block: false, effects: [effects.CHAIR]},
+  '几': { block: true, effects: [effects.TAKE_POT] },
+  '日記': { block: true, effects: [effects.DIARY] },
   '冰箱': { block: true },
+  '月曆': { block: true },
+  '衣櫃': { block: true },
+  '床': { block: false, effects: [effects.BED_SLEEP] },
+  '櫃': { block: true },
+  '槽': { block: true },
+  '馬桶': { block: false, effects: [effects.TOILET] },
+  '浴缸': { block: false, effects: [effects.BATHTUB] },
+  '桶': { block: true },
+  '台': { block: true },
+  '爐': { block: true },
+  '書': { block: true },
+  '花': { block: true },
+  '樹': { block: true },
+  '人': { block: true },
+  '蟲': { block: true },
+  '劍': { block: true },
+  '金': { block: false },
+  '銀': { block: false },
+  '按鈕': { block: true },
 };
 
 module.exports = {
   getMainMap,
   isCellBlocking,
+  setCellBlocking,
   CellType,
 };
+
+/**
+ * @param {CellType} cellType
+ * @param {boolean} blocking
+ */
+function setCellBlocking(cellType, blocking) {
+  if (mapObjects[cellType]) {
+    mapObjects[cellType].block = blocking;
+  }
+}
 
 /**
  * @param {Cell}
  * @returns {boolean}
  */
 function isCellBlocking(cell) {
-  return mapObjects[cell.t]?.block || cell.block;
+  if ('block' in cell) {
+    return cell.block;
+  }
+  return mapObjects[cell.t]?.block;
 }
 
 /**
  * @param {Cell[][]} cells
  * @param {CellType | (Cell) => boolean} condition
- * @returns
+ * @returns {Omit<Position, 'mapId'>}
  */
 function findCell(cells, condition) {
   if (typeof condition === 'string') {
@@ -81,12 +104,32 @@ function getMainMap() {
   };
 }
 
+
 /**
- * @param {Cell[][]} cells
+ * @param {CellType} cellType
  */
-function applyEffects(cells) {
-  const diary = findCell(cells, CellType.DIARY);
-  diary.effects = [effects.DIARY];
+function makeCell(cellType) {
+  const baseObject = { ...mapObjects[cellType], t: cellType } ?? { t: cellType };
+  switch(cellType) {
+    case '門':
+      return {
+        ...baseObject,
+        blockFn: (/** @type {GameState} */state) => {
+          const hasShoes = state.items.includes('鞋子');
+          if (!hasShoes) {
+            state.messages.push('出門要穿鞋子！');
+          }
+          return !hasShoes;
+        },
+      };
+    case '鞋':
+      return {
+        ...baseObject,
+        effects: (baseObject?.effects ?? []).concat([effects.WEAR_SHOES]),
+      };
+    default:
+      return baseObject;
+  }
 }
 
 /**
@@ -99,474 +142,474 @@ function getCells() {
       )
     );
   {
-    // cells[20][20].t = "START";
-    // cells[6][13].items = [gameItems.CAKE];
-    // cells[6][13].t = "冰箱";
-    // cells[21][21].items = [gameItems.CAKE];
-    // cells[21][21].t = "冰箱";
-    // cells[17][23].t = "日記";
-    // cells[20][9].t = "几";
-    // cells[17][22].t = "桌";
-    // cells[17][24].t = "桌";
-    cells[16][10].effects = [effects.makeScoreEffect('+10', Factions.RED)];
-    cells[16][11].effects = [effects.makeScoreEffect('-2', Factions.BLUE)];
-    cells[16][12].effects = [effects.makeScoreEffect('*2', Factions.YELLOW)];
-    cells[16][13].effects = [effects.makeScoreEffect('/2', Factions.GREEN)];
-    cells[16][14].effects = [effects.makeScoreEffect('+1', Factions.RED), effects.makeScoreEffect('-1', Factions.BLUE)];
+    // cells[20][20] = makeCell("START");
+    // cells[6][13] = makeCell("冰箱");
+    // cells[21][21] = makeCell("冰箱");
+    // cells[17][23] = makeCell("日記");
+    // cells[20][9] = makeCell("几");
+    // cells[17][22] = makeCell("桌");
+    // cells[17][24] = makeCell("桌");
 
-    cells[0][0].t = "牆";
-    cells[0][1].t = "牆";
-    cells[0][2].t = "牆";
-    cells[0][3].t = "牆";
-    cells[0][4].t = "牆";
-    cells[0][5].t = "牆";
-    cells[0][6].t = "牆";
-    cells[0][7].t = "牆";
-    cells[0][8].t = "牆";
-    cells[0][9].t = "牆";
-    cells[0][10].t = "牆";
-    cells[0][11].t = "牆";
-    cells[0][13].t = "人";
-    cells[0][15].t = "牆";
-    cells[0][16].t = "牆";
-    cells[0][17].t = "牆";
-    cells[0][18].t = "牆";
-    cells[0][19].t = "牆";
-    cells[0][20].t = "柵";
-    cells[0][21].t = "柵";
-    cells[0][22].t = "柵";
-    cells[0][23].t = "柵";
-    cells[0][24].t = "柵";
-    cells[0][25].t = "柵";
-    cells[0][26].t = "柵";
-    cells[0][27].t = "柵";
-    cells[1][0].t = "牆";
-    cells[1][1].t = "花";
-    cells[1][3].t = "爐";
-    cells[1][4].t = "爐";
-    cells[1][6].t = "花";
-    cells[1][7].t = "牆";
-    cells[1][9].t = "花";
-    cells[1][11].t = "牆";
-    cells[1][12].t = "牆";
-    cells[1][13].t = "門";
-    cells[1][14].t = "牆";
-    cells[1][15].t = "牆";
-    cells[1][17].t = "花";
-    cells[1][19].t = "牆";
-    cells[1][20].t = "花";
-    cells[1][24].t = "花";
-    cells[1][25].t = "花";
-    cells[1][26].t = "花";
-    cells[1][27].t = "柵";
-    cells[2][0].t = "牆";
-    cells[2][7].t = "牆";
-    cells[2][19].t = "牆";
-    cells[2][23].t = "劍";
-    cells[2][26].t = "花";
-    cells[2][27].t = "柵";
-    cells[3][0].t = "牆";
-    cells[3][11].t = "柱";
-    cells[3][15].t = "柱";
-    cells[3][19].t = "門";
-    cells[3][21].t = "劍";
-    cells[3][25].t = "樹";
-    cells[3][26].t = "花";
-    cells[3][27].t = "柵";
-    cells[4][0].t = "牆";
-    cells[4][2].t = "椅";
-    cells[4][3].t = "几";
-    cells[4][4].t = "几";
-    cells[4][5].t = "椅";
-    cells[4][19].t = "牆";
-    cells[4][26].t = "花";
-    cells[4][27].t = "柵";
-    cells[5][0].t = "牆";
-    cells[5][3].t = "椅";
-    cells[5][4].t = "椅";
-    cells[5][7].t = "牆";
-    cells[5][10].t = "牆";
-    cells[5][11].t = "牆";
-    cells[5][12].t = "牆";
-    cells[5][13].t = "牆";
-    cells[5][14].t = "牆";
-    cells[5][15].t = "牆";
-    cells[5][16].t = "牆";
-    cells[5][19].t = "牆";
-    cells[5][20].t = "花";
-    cells[5][23].t = "劍";
-    cells[5][26].t = "花";
-    cells[5][27].t = "柵";
-    cells[6][0].t = "牆";
-    cells[6][7].t = "牆";
-    cells[6][10].t = "牆";
-    cells[6][11].t = "櫃";
-    cells[6][12].t = "櫃";
-    cells[6][13].t = "櫃";
-    cells[6][14].t = "櫃";
-    cells[6][15].t = "櫃";
-    cells[6][16].t = "牆";
-    cells[6][19].t = "牆";
-    cells[6][24].t = "花";
-    cells[6][25].t = "花";
-    cells[6][26].t = "花";
-    cells[6][27].t = "柵";
-    cells[7][0].t = "牆";
-    cells[7][1].t = "花";
-    cells[7][6].t = "花";
-    cells[7][7].t = "牆";
-    cells[7][10].t = "牆";
-    cells[7][16].t = "牆";
-    cells[7][19].t = "牆";
-    cells[7][20].t = "櫃";
-    cells[7][21].t = "櫃";
-    cells[7][22].t = "櫃";
-    cells[7][23].t = "櫃";
-    cells[7][24].t = "櫃";
-    cells[7][25].t = "櫃";
-    cells[7][26].t = "櫃";
-    cells[7][27].t = "牆";
-    cells[8][0].t = "牆";
-    cells[8][1].t = "牆";
-    cells[8][2].t = "牆";
-    cells[8][3].t = "牆";
-    cells[8][4].t = "牆";
-    cells[8][6].t = "牆";
-    cells[8][7].t = "牆";
-    cells[8][10].t = "牆";
-    cells[8][12].t = "椅";
-    cells[8][13].t = "几";
-    cells[8][14].t = "椅";
-    cells[8][16].t = "牆";
-    cells[8][19].t = "牆";
-    cells[8][20].t = "櫃";
-    cells[8][26].t = "櫃";
-    cells[8][27].t = "牆";
-    cells[9][0].t = "牆";
-    cells[9][7].t = "牆";
-    cells[9][10].t = "門";
-    cells[9][16].t = "門";
-    cells[9][19].t = "門";
-    cells[9][22].t = "櫃";
-    cells[9][23].t = "櫃";
-    cells[9][24].t = "櫃";
-    cells[9][26].t = "櫃";
-    cells[9][27].t = "牆";
-    cells[10][0].t = "牆";
-    cells[10][3].t = "椅";
-    cells[10][10].t = "牆";
-    cells[10][15].t = "桌";
-    cells[10][16].t = "牆";
-    cells[10][19].t = "牆";
-    cells[10][20].t = "櫃";
-    cells[10][22].t = "櫃";
-    cells[10][23].t = "書";
-    cells[10][24].t = "櫃";
-    cells[10][27].t = "牆";
-    cells[11][0].t = "牆";
-    cells[11][2].t = "椅";
-    cells[11][3].t = "桌";
-    cells[11][4].t = "椅";
-    cells[11][7].t = "牆";
-    cells[11][8].t = "花";
-    cells[11][10].t = "牆";
-    cells[11][11].t = "話機";
-    cells[11][14].t = "椅";
-    cells[11][15].t = "桌";
-    cells[11][16].t = "牆";
-    cells[11][19].t = "牆";
-    cells[11][20].t = "櫃";
-    cells[11][22].t = "櫃";
-    cells[11][24].t = "櫃";
-    cells[11][25].t = "書";
-    cells[11][27].t = "牆";
-    cells[12][0].t = "牆";
-    cells[12][3].t = "桌";
-    cells[12][7].t = "牆";
-    cells[12][10].t = "牆";
-    cells[12][11].t = "牆";
-    cells[12][12].t = "牆";
-    cells[12][13].t = "門";
-    cells[12][14].t = "牆";
-    cells[12][15].t = "牆";
-    cells[12][16].t = "牆";
-    cells[12][18].t = "花";
-    cells[12][19].t = "牆";
-    cells[12][20].t = "櫃";
-    cells[12][22].t = "櫃";
-    cells[12][23].t = "書";
-    cells[12][24].t = "櫃";
-    cells[12][25].t = "書";
-    cells[12][27].t = "牆";
-    cells[13][0].t = "牆";
-    cells[13][2].t = "椅";
-    cells[13][3].t = "桌";
-    cells[13][4].t = "椅";
-    cells[13][6].t = "爐";
-    cells[13][7].t = "牆";
-    cells[13][10].t = "牆";
-    cells[13][11].t = "桌";
-    cells[13][12].t = "日記";
-    cells[13][15].t = "月曆";
-    cells[13][16].t = "牆";
-    cells[13][19].t = "牆";
-    cells[13][20].t = "櫃";
-    cells[13][22].t = "櫃";
-    cells[13][23].t = "書";
-    cells[13][27].t = "牆";
-    cells[14][0].t = "牆";
-    cells[14][3].t = "桌";
-    cells[14][7].t = "牆";
-    cells[14][10].t = "牆";
-    cells[14][12].t = "椅";
-    cells[14][16].t = "牆";
-    cells[14][19].t = "牆";
-    cells[14][20].t = "櫃";
-    cells[14][22].t = "櫃";
-    cells[14][23].t = "桌";
-    cells[14][24].t = "椅";
-    cells[14][26].t = "書";
-    cells[14][27].t = "牆";
-    cells[15][0].t = "牆";
-    cells[15][2].t = "椅";
-    cells[15][3].t = "桌";
-    cells[15][4].t = "椅";
-    cells[15][7].t = "牆";
-    cells[15][8].t = "花";
-    cells[15][10].t = "門";
-    cells[15][13].t = "鞋";
-    cells[15][16].t = "門";
-    cells[15][19].t = "牆";
-    cells[15][20].t = "櫃";
-    cells[15][22].t = "櫃";
-    cells[15][23].t = "書";
-    cells[15][26].t = "櫃";
-    cells[15][27].t = "牆";
-    cells[16][0].t = "牆";
-    cells[16][3].t = "椅";
-    cells[16][10].t = "牆";
-    cells[16][16].t = "牆";
-    cells[16][19].t = "牆";
-    cells[16][20].t = "櫃";
-    cells[16][22].t = "櫃";
-    cells[16][23].t = "書";
-    cells[16][24].t = "書";
-    cells[16][26].t = "櫃";
-    cells[16][27].t = "牆";
-    cells[17][0].t = "牆";
-    cells[17][7].t = "牆";
-    cells[17][10].t = "牆";
-    cells[17][11].t = "衣櫃";
-    cells[17][12].t = "衣櫃";
-    cells[17][14].t = "床";
-    cells[17][15].t = "櫃";
-    cells[17][16].t = "牆";
-    cells[17][19].t = "牆";
-    cells[17][20].t = "櫃";
-    cells[17][22].t = "櫃";
-    cells[17][23].t = "書";
-    cells[17][26].t = "櫃";
-    cells[17][27].t = "牆";
-    cells[18][0].t = "牆";
-    cells[18][1].t = "牆";
-    cells[18][2].t = "牆";
-    cells[18][3].t = "牆";
-    cells[18][4].t = "牆";
-    cells[18][6].t = "牆";
-    cells[18][7].t = "牆";
-    cells[18][10].t = "牆";
-    cells[18][11].t = "牆";
-    cells[18][12].t = "牆";
-    cells[18][13].t = "門";
-    cells[18][14].t = "牆";
-    cells[18][15].t = "牆";
-    cells[18][16].t = "牆";
-    cells[18][19].t = "牆";
-    cells[18][20].t = "櫃";
-    cells[18][26].t = "櫃";
-    cells[18][27].t = "牆";
-    cells[19][0].t = "牆";
-    cells[19][1].t = "爐";
-    cells[19][2].t = "爐";
-    cells[19][3].t = "台";
-    cells[19][4].t = "槽";
-    cells[19][6].t = "櫃";
-    cells[19][7].t = "牆";
-    cells[19][18].t = "花";
-    cells[19][19].t = "牆";
-    cells[19][20].t = "櫃";
-    cells[19][21].t = "櫃";
-    cells[19][22].t = "櫃";
-    cells[19][23].t = "櫃";
-    cells[19][24].t = "櫃";
-    cells[19][25].t = "櫃";
-    cells[19][26].t = "櫃";
-    cells[19][27].t = "牆";
-    cells[20][0].t = "牆";
-    cells[20][7].t = "牆";
-    cells[20][10].t = "牆";
-    cells[20][11].t = "牆";
-    cells[20][12].t = "牆";
-    cells[20][13].t = "門";
-    cells[20][14].t = "牆";
-    cells[20][15].t = "牆";
-    cells[20][16].t = "牆";
-    cells[20][17].t = "門";
-    cells[20][18].t = "牆";
-    cells[20][19].t = "牆";
-    cells[20][20].t = "牆";
-    cells[20][21].t = "牆";
-    cells[20][22].t = "牆";
-    cells[20][23].t = "牆";
-    cells[20][24].t = "牆";
-    cells[20][25].t = "牆";
-    cells[20][26].t = "牆";
-    cells[20][27].t = "牆";
-    cells[21][0].t = "牆";
-    cells[21][3].t = "台";
-    cells[21][4].t = "台";
-    cells[21][5].t = "台";
-    cells[21][10].t = "牆";
-    cells[21][11].t = "槽";
-    cells[21][12].t = "槽";
-    cells[21][14].t = "花";
-    cells[21][15].t = "牆";
-    cells[21][16].t = "牆";
-    cells[21][18].t = "牆";
-    cells[21][19].t = "按鈕";
-    cells[21][20].t = "銀";
-    cells[21][21].t = "牆";
-    cells[21][22].t = "牆";
-    cells[21][23].t = "牆";
-    cells[21][24].t = "牆";
-    cells[21][25].t = "牆";
-    cells[21][26].t = "牆";
-    cells[21][27].t = "牆";
-    cells[22][0].t = "牆";
-    cells[22][7].t = "牆";
-    cells[22][10].t = "牆";
-    cells[22][15].t = "牆";
-    cells[22][16].t = "牆";
-    cells[22][18].t = "牆";
-    cells[22][19].t = "牆";
-    cells[22][26].t = "金";
-    cells[22][27].t = "牆";
-    cells[23][0].t = "牆";
-    cells[23][1].t = "冰箱";
-    cells[23][2].t = "櫃";
-    cells[23][3].t = "櫃";
-    cells[23][4].t = "櫃";
-    cells[23][6].t = "桶";
-    cells[23][7].t = "牆";
-    cells[23][10].t = "牆";
-    cells[23][11].t = "門";
-    cells[23][12].t = "牆";
-    cells[23][13].t = "門";
-    cells[23][14].t = "牆";
-    cells[23][15].t = "牆";
-    cells[23][16].t = "牆";
-    cells[23][18].t = "牆";
-    cells[23][19].t = "牆";
-    cells[23][20].t = "牆";
-    cells[23][21].t = "牆";
-    cells[23][23].t = "牆";
-    cells[23][24].t = "牆";
-    cells[23][25].t = "牆";
-    cells[23][26].t = "牆";
-    cells[23][27].t = "牆";
-    cells[24][0].t = "牆";
-    cells[24][1].t = "牆";
-    cells[24][2].t = "牆";
-    cells[24][3].t = "牆";
-    cells[24][4].t = "牆";
-    cells[24][5].t = "牆";
-    cells[24][6].t = "牆";
-    cells[24][7].t = "牆";
-    cells[24][8].t = "門";
-    cells[24][9].t = "牆";
-    cells[24][10].t = "牆";
-    cells[24][12].t = "牆";
-    cells[24][15].t = "牆";
-    cells[24][16].t = "牆";
-    cells[24][23].t = "牆";
-    cells[24][24].t = "牆";
-    cells[24][25].t = "牆";
-    cells[24][26].t = "牆";
-    cells[24][27].t = "牆";
-    cells[25][0].t = "柵";
-    cells[25][1].t = "花";
-    cells[25][2].t = "花";
-    cells[25][3].t = "花";
-    cells[25][4].t = "花";
-    cells[25][5].t = "花";
-    cells[25][6].t = "花";
-    cells[25][7].t = "花";
-    cells[25][10].t = "牆";
-    cells[25][11].t = "馬桶";
-    cells[25][12].t = "牆";
-    cells[25][14].t = "浴缸";
-    cells[25][15].t = "牆";
-    cells[25][16].t = "牆";
-    cells[25][17].t = "牆";
-    cells[25][18].t = "牆";
-    cells[25][19].t = "牆";
-    cells[25][20].t = "牆";
-    cells[25][21].t = "牆";
-    cells[25][22].t = "牆";
-    cells[25][23].t = "牆";
-    cells[25][24].t = "牆";
-    cells[25][25].t = "桶";
-    cells[25][26].t = "桶";
-    cells[25][27].t = "柵";
-    cells[26][0].t = "柵";
-    cells[26][2].t = "樹";
-    cells[26][3].t = "人";
-    cells[26][4].t = "花";
-    cells[26][7].t = "樹";
-    cells[26][10].t = "牆";
-    cells[26][11].t = "牆";
-    cells[26][12].t = "牆";
-    cells[26][13].t = "牆";
-    cells[26][14].t = "牆";
-    cells[26][15].t = "牆";
-    cells[26][16].t = "牆";
-    cells[26][17].t = "牆";
-    cells[26][18].t = "牆";
-    cells[26][19].t = "牆";
-    cells[26][20].t = "牆";
-    cells[26][21].t = "牆";
-    cells[26][22].t = "牆";
-    cells[26][23].t = "牆";
-    cells[26][24].t = "牆";
-    cells[26][25].t = "人";
-    cells[26][27].t = "柵";
-    cells[27][0].t = "柵";
-    cells[27][1].t = "花";
-    cells[27][2].t = "花";
-    cells[27][3].t = "花";
-    cells[27][4].t = "花";
-    cells[27][5].t = "花";
-    cells[27][6].t = "花";
-    cells[27][7].t = "花";
-    cells[27][13].t = "花";
-    cells[27][21].t = "花";
-    cells[27][24].t = "門";
-    cells[27][27].t = "柵";
-    cells[28][0].t = "柵";
-    cells[28][1].t = "柵";
-    cells[28][2].t = "柵";
-    cells[28][3].t = "柵";
-    cells[28][4].t = "柵";
-    cells[28][5].t = "柵";
-    cells[28][6].t = "柵";
-    cells[28][7].t = "柵";
-    cells[28][11].t = "樹";
-    cells[28][17].t = "樹";
-    cells[28][19].t = "樹";
-    cells[28][24].t = "柵";
-    cells[28][25].t = "柵";
-    cells[28][26].t = "柵";
-    cells[28][27].t = "柵";
+    cells[0][0] = makeCell("牆");
+    cells[0][1] = makeCell("牆");
+    cells[0][2] = makeCell("牆");
+    cells[0][3] = makeCell("牆");
+    cells[0][4] = makeCell("牆");
+    cells[0][5] = makeCell("牆");
+    cells[0][6] = makeCell("牆");
+    cells[0][7] = makeCell("牆");
+    cells[0][8] = makeCell("牆");
+    cells[0][9] = makeCell("牆");
+    cells[0][10] = makeCell("牆");
+    cells[0][11] = makeCell("牆");
+    cells[0][13] = makeCell("人");
+    cells[0][15] = makeCell("牆");
+    cells[0][16] = makeCell("牆");
+    cells[0][17] = makeCell("牆");
+    cells[0][18] = makeCell("牆");
+    cells[0][19] = makeCell("牆");
+    cells[0][20] = makeCell("柵");
+    cells[0][21] = makeCell("柵");
+    cells[0][22] = makeCell("柵");
+    cells[0][23] = makeCell("柵");
+    cells[0][24] = makeCell("柵");
+    cells[0][25] = makeCell("柵");
+    cells[0][26] = makeCell("柵");
+    cells[0][27] = makeCell("柵");
+    cells[1][0] = makeCell("牆");
+    cells[1][1] = makeCell("花");
+    cells[1][3] = makeCell("爐");
+    cells[1][4] = makeCell("爐");
+    cells[1][6] = makeCell("花");
+    cells[1][7] = makeCell("牆");
+    cells[1][9] = makeCell("花");
+    cells[1][11] = makeCell("牆");
+    cells[1][12] = makeCell("牆");
+    cells[1][13] = makeCell("門");
+    cells[1][14] = makeCell("牆");
+    cells[1][15] = makeCell("牆");
+    cells[1][17] = makeCell("花");
+    cells[1][19] = makeCell("牆");
+    cells[1][20] = makeCell("花");
+    cells[1][24] = makeCell("花");
+    cells[1][25] = makeCell("花");
+    cells[1][26] = makeCell("花");
+    cells[1][27] = makeCell("柵");
+    cells[2][0] = makeCell("牆");
+    cells[2][7] = makeCell("牆");
+    cells[2][19] = makeCell("牆");
+    cells[2][23] = makeCell("劍");
+    cells[2][26] = makeCell("花");
+    cells[2][27] = makeCell("柵");
+    cells[3][0] = makeCell("牆");
+    cells[3][11] = makeCell("柱");
+    cells[3][15] = makeCell("柱");
+    cells[3][19] = makeCell("門");
+    cells[3][21] = makeCell("劍");
+    cells[3][25] = makeCell("樹");
+    cells[3][26] = makeCell("花");
+    cells[3][27] = makeCell("柵");
+    cells[4][0] = makeCell("牆");
+    cells[4][2] = makeCell("椅");
+    cells[4][3] = makeCell("几");
+    cells[4][4] = makeCell("几");
+    cells[4][5] = makeCell("椅");
+    cells[4][19] = makeCell("牆");
+    cells[4][26] = makeCell("花");
+    cells[4][27] = makeCell("柵");
+    cells[5][0] = makeCell("牆");
+    cells[5][3] = makeCell("椅");
+    cells[5][4] = makeCell("椅");
+    cells[5][7] = makeCell("牆");
+    cells[5][10] = makeCell("牆");
+    cells[5][11] = makeCell("牆");
+    cells[5][12] = makeCell("牆");
+    cells[5][13] = makeCell("牆");
+    cells[5][14] = makeCell("牆");
+    cells[5][15] = makeCell("牆");
+    cells[5][16] = makeCell("牆");
+    cells[5][19] = makeCell("牆");
+    cells[5][20] = makeCell("花");
+    cells[5][23] = makeCell("劍");
+    cells[5][26] = makeCell("花");
+    cells[5][27] = makeCell("柵");
+    cells[6][0] = makeCell("牆");
+    cells[6][7] = makeCell("牆");
+    cells[6][10] = makeCell("牆");
+    cells[6][11] = makeCell("櫃");
+    cells[6][12] = makeCell("櫃");
+    cells[6][13] = makeCell("櫃");
+    cells[6][14] = makeCell("櫃");
+    cells[6][15] = makeCell("櫃");
+    cells[6][16] = makeCell("牆");
+    cells[6][19] = makeCell("牆");
+    cells[6][24] = makeCell("花");
+    cells[6][25] = makeCell("花");
+    cells[6][26] = makeCell("花");
+    cells[6][27] = makeCell("柵");
+    cells[7][0] = makeCell("牆");
+    cells[7][1] = makeCell("花");
+    cells[7][6] = makeCell("花");
+    cells[7][7] = makeCell("牆");
+    cells[7][10] = makeCell("牆");
+    cells[7][16] = makeCell("牆");
+    cells[7][19] = makeCell("牆");
+    cells[7][20] = makeCell("櫃");
+    cells[7][21] = makeCell("櫃");
+    cells[7][22] = makeCell("櫃");
+    cells[7][23] = makeCell("櫃");
+    cells[7][24] = makeCell("櫃");
+    cells[7][25] = makeCell("櫃");
+    cells[7][26] = makeCell("櫃");
+    cells[7][27] = makeCell("牆");
+    cells[8][0] = makeCell("牆");
+    cells[8][1] = makeCell("牆");
+    cells[8][2] = makeCell("牆");
+    cells[8][3] = makeCell("牆");
+    cells[8][4] = makeCell("牆");
+    cells[8][6] = makeCell("牆");
+    cells[8][7] = makeCell("牆");
+    cells[8][10] = makeCell("牆");
+    cells[8][12] = makeCell("椅");
+    cells[8][13] = makeCell("几");
+    cells[8][14] = makeCell("椅");
+    cells[8][16] = makeCell("牆");
+    cells[8][19] = makeCell("牆");
+    cells[8][20] = makeCell("櫃");
+    cells[8][26] = makeCell("櫃");
+    cells[8][27] = makeCell("牆");
+    cells[9][0] = makeCell("牆");
+    cells[9][7] = makeCell("牆");
+    cells[9][10] = makeCell("門");
+    cells[9][16] = makeCell("門");
+    cells[9][19] = makeCell("門");
+    cells[9][22] = makeCell("櫃");
+    cells[9][23] = makeCell("櫃");
+    cells[9][24] = makeCell("櫃");
+    cells[9][26] = makeCell("櫃");
+    cells[9][27] = makeCell("牆");
+    cells[10][0] = makeCell("牆");
+    cells[10][3] = makeCell("椅");
+    cells[10][10] = makeCell("牆");
+    cells[10][15] = makeCell("桌");
+    cells[10][16] = makeCell("牆");
+    cells[10][19] = makeCell("牆");
+    cells[10][20] = makeCell("櫃");
+    cells[10][22] = makeCell("櫃");
+    cells[10][23] = makeCell("書");
+    cells[10][24] = makeCell("櫃");
+    cells[10][27] = makeCell("牆");
+    cells[11][0] = makeCell("牆");
+    cells[11][2] = makeCell("椅");
+    cells[11][3] = makeCell("桌");
+    cells[11][4] = makeCell("椅");
+    cells[11][7] = makeCell("牆");
+    cells[11][8] = makeCell("花");
+    cells[11][10] = makeCell("牆");
+    cells[11][11] = makeCell("話機");
+    cells[11][14] = makeCell("椅");
+    cells[11][15] = makeCell("桌");
+    cells[11][16] = makeCell("牆");
+    cells[11][19] = makeCell("牆");
+    cells[11][20] = makeCell("櫃");
+    cells[11][22] = makeCell("櫃");
+    cells[11][24] = makeCell("櫃");
+    cells[11][25] = makeCell("書");
+    cells[11][27] = makeCell("牆");
+    cells[12][0] = makeCell("牆");
+    cells[12][3] = makeCell("桌");
+    cells[12][7] = makeCell("牆");
+    cells[12][10] = makeCell("牆");
+    cells[12][11] = makeCell("牆");
+    cells[12][12] = makeCell("牆");
+    cells[12][13] = makeCell("門");
+    cells[12][14] = makeCell("牆");
+    cells[12][15] = makeCell("牆");
+    cells[12][16] = makeCell("牆");
+    cells[12][18] = makeCell("花");
+    cells[12][19] = makeCell("牆");
+    cells[12][20] = makeCell("櫃");
+    cells[12][22] = makeCell("櫃");
+    cells[12][23] = makeCell("書");
+    cells[12][24] = makeCell("櫃");
+    cells[12][25] = makeCell("書");
+    cells[12][27] = makeCell("牆");
+    cells[13][0] = makeCell("牆");
+    cells[13][2] = makeCell("椅");
+    cells[13][3] = makeCell("桌");
+    cells[13][4] = makeCell("椅");
+    cells[13][6] = makeCell("爐");
+    cells[13][7] = makeCell("牆");
+    cells[13][10] = makeCell("牆");
+    cells[13][11] = makeCell("桌");
+    cells[13][12] = makeCell("日記");
+    cells[13][15] = makeCell("月曆");
+    cells[13][16] = makeCell("牆");
+    cells[13][19] = makeCell("牆");
+    cells[13][20] = makeCell("櫃");
+    cells[13][22] = makeCell("櫃");
+    cells[13][23] = makeCell("書");
+    cells[13][27] = makeCell("牆");
+    cells[14][0] = makeCell("牆");
+    cells[14][3] = makeCell("桌");
+    cells[14][7] = makeCell("牆");
+    cells[14][10] = makeCell("牆");
+    cells[14][12] = makeCell("椅");
+    cells[14][16] = makeCell("牆");
+    cells[14][19] = makeCell("牆");
+    cells[14][20] = makeCell("櫃");
+    cells[14][22] = makeCell("櫃");
+    cells[14][23] = makeCell("桌");
+    cells[14][24] = makeCell("椅");
+    cells[14][26] = makeCell("書");
+    cells[14][27] = makeCell("牆");
+    cells[15][0] = makeCell("牆");
+    cells[15][2] = makeCell("椅");
+    cells[15][3] = makeCell("桌");
+    cells[15][4] = makeCell("椅");
+    cells[15][7] = makeCell("牆");
+    cells[15][8] = makeCell("花");
+    cells[15][10] = makeCell("門");
+    cells[15][13] = makeCell("鞋");
+    cells[15][16] = makeCell("門");
+    cells[15][19] = makeCell("牆");
+    cells[15][20] = makeCell("櫃");
+    cells[15][22] = makeCell("櫃");
+    cells[15][23] = makeCell("書");
+    cells[15][26] = makeCell("櫃");
+    cells[15][27] = makeCell("牆");
+    cells[16][0] = makeCell("牆");
+    cells[16][3] = makeCell("椅");
+    cells[16][10] = makeCell("牆");
+    cells[16][16] = makeCell("牆");
+    cells[16][19] = makeCell("牆");
+    cells[16][20] = makeCell("櫃");
+    cells[16][22] = makeCell("櫃");
+    cells[16][23] = makeCell("書");
+    cells[16][24] = makeCell("書");
+    cells[16][26] = makeCell("櫃");
+    cells[16][27] = makeCell("牆");
+    cells[17][0] = makeCell("牆");
+    cells[17][7] = makeCell("牆");
+    cells[17][10] = makeCell("牆");
+    cells[17][11] = makeCell("衣櫃");
+    cells[17][12] = makeCell("衣櫃");
+    cells[17][14] = makeCell("床");
+    cells[17][15] = makeCell("櫃");
+    cells[17][16] = makeCell("牆");
+    cells[17][19] = makeCell("牆");
+    cells[17][20] = makeCell("櫃");
+    cells[17][22] = makeCell("櫃");
+    cells[17][23] = makeCell("書");
+    cells[17][26] = makeCell("櫃");
+    cells[17][27] = makeCell("牆");
+    cells[18][0] = makeCell("牆");
+    cells[18][1] = makeCell("牆");
+    cells[18][2] = makeCell("牆");
+    cells[18][3] = makeCell("牆");
+    cells[18][4] = makeCell("牆");
+    cells[18][6] = makeCell("牆");
+    cells[18][7] = makeCell("牆");
+    cells[18][10] = makeCell("牆");
+    cells[18][11] = makeCell("牆");
+    cells[18][12] = makeCell("牆");
+    cells[18][13] = makeCell("門");
+    cells[18][14] = makeCell("牆");
+    cells[18][15] = makeCell("牆");
+    cells[18][16] = makeCell("牆");
+    cells[18][19] = makeCell("牆");
+    cells[18][20] = makeCell("櫃");
+    cells[18][26] = makeCell("櫃");
+    cells[18][27] = makeCell("牆");
+    cells[19][0] = makeCell("牆");
+    cells[19][1] = makeCell("爐");
+    cells[19][2] = makeCell("爐");
+    cells[19][3] = makeCell("台");
+    cells[19][4] = makeCell("槽");
+    cells[19][6] = makeCell("櫃");
+    cells[19][7] = makeCell("牆");
+    cells[19][18] = makeCell("花");
+    cells[19][19] = makeCell("牆");
+    cells[19][20] = makeCell("櫃");
+    cells[19][21] = makeCell("櫃");
+    cells[19][22] = makeCell("櫃");
+    cells[19][23] = makeCell("櫃");
+    cells[19][24] = makeCell("櫃");
+    cells[19][25] = makeCell("櫃");
+    cells[19][26] = makeCell("櫃");
+    cells[19][27] = makeCell("牆");
+    cells[20][0] = makeCell("牆");
+    cells[20][7] = makeCell("牆");
+    cells[20][10] = makeCell("牆");
+    cells[20][11] = makeCell("牆");
+    cells[20][12] = makeCell("牆");
+    cells[20][13] = makeCell("門");
+    cells[20][14] = makeCell("牆");
+    cells[20][15] = makeCell("牆");
+    cells[20][16] = makeCell("牆");
+    cells[20][17] = makeCell("門");
+    cells[20][18] = makeCell("牆");
+    cells[20][19] = makeCell("牆");
+    cells[20][20] = makeCell("牆");
+    cells[20][21] = makeCell("牆");
+    cells[20][22] = makeCell("牆");
+    cells[20][23] = makeCell("牆");
+    cells[20][24] = makeCell("牆");
+    cells[20][25] = makeCell("牆");
+    cells[20][26] = makeCell("牆");
+    cells[20][27] = makeCell("牆");
+    cells[21][0] = makeCell("牆");
+    cells[21][3] = makeCell("台");
+    cells[21][4] = makeCell("台");
+    cells[21][5] = makeCell("台");
+    cells[21][10] = makeCell("牆");
+    cells[21][11] = makeCell("槽");
+    cells[21][12] = makeCell("槽");
+    cells[21][14] = makeCell("花");
+    cells[21][15] = makeCell("牆");
+    cells[21][16] = makeCell("牆");
+    cells[21][18] = makeCell("牆");
+    cells[21][19] = makeCell("按鈕");
+    cells[21][20] = makeCell("銀");
+    cells[21][21] = makeCell("牆");
+    cells[21][22] = makeCell("牆");
+    cells[21][23] = makeCell("牆");
+    cells[21][24] = makeCell("牆");
+    cells[21][25] = makeCell("牆");
+    cells[21][26] = makeCell("牆");
+    cells[21][27] = makeCell("牆");
+    cells[22][0] = makeCell("牆");
+    cells[22][7] = makeCell("牆");
+    cells[22][10] = makeCell("牆");
+    cells[22][15] = makeCell("牆");
+    cells[22][16] = makeCell("牆");
+    cells[22][18] = makeCell("牆");
+    cells[22][19] = makeCell("牆");
+    cells[22][26] = makeCell("金");
+    cells[22][27] = makeCell("牆");
+    cells[23][0] = makeCell("牆");
+    cells[23][1] = makeCell("冰箱");
+    cells[23][2] = makeCell("櫃");
+    cells[23][3] = makeCell("櫃");
+    cells[23][4] = makeCell("櫃");
+    cells[23][6] = makeCell("桶");
+    cells[23][7] = makeCell("牆");
+    cells[23][10] = makeCell("牆");
+    cells[23][11] = makeCell("門");
+    cells[23][12] = makeCell("牆");
+    cells[23][13] = makeCell("門");
+    cells[23][14] = makeCell("牆");
+    cells[23][15] = makeCell("牆");
+    cells[23][16] = makeCell("牆");
+    cells[23][18] = makeCell("牆");
+    cells[23][19] = makeCell("牆");
+    cells[23][20] = makeCell("牆");
+    cells[23][21] = makeCell("牆");
+    cells[23][23] = makeCell("牆");
+    cells[23][24] = makeCell("牆");
+    cells[23][25] = makeCell("牆");
+    cells[23][26] = makeCell("牆");
+    cells[23][27] = makeCell("牆");
+    cells[24][0] = makeCell("牆");
+    cells[24][1] = makeCell("牆");
+    cells[24][2] = makeCell("牆");
+    cells[24][3] = makeCell("牆");
+    cells[24][4] = makeCell("牆");
+    cells[24][5] = makeCell("牆");
+    cells[24][6] = makeCell("牆");
+    cells[24][7] = makeCell("牆");
+    cells[24][8] = makeCell("門");
+    cells[24][9] = makeCell("牆");
+    cells[24][10] = makeCell("牆");
+    cells[24][12] = makeCell("牆");
+    cells[24][15] = makeCell("牆");
+    cells[24][16] = makeCell("牆");
+    cells[24][23] = makeCell("牆");
+    cells[24][24] = makeCell("牆");
+    cells[24][25] = makeCell("牆");
+    cells[24][26] = makeCell("牆");
+    cells[24][27] = makeCell("牆");
+    cells[25][0] = makeCell("柵");
+    cells[25][1] = makeCell("花");
+    cells[25][2] = makeCell("花");
+    cells[25][3] = makeCell("花");
+    cells[25][4] = makeCell("花");
+    cells[25][5] = makeCell("花");
+    cells[25][6] = makeCell("花");
+    cells[25][7] = makeCell("花");
+    cells[25][10] = makeCell("牆");
+    cells[25][11] = makeCell("馬桶");
+    cells[25][12] = makeCell("牆");
+    cells[25][14] = makeCell("浴缸");
+    cells[25][15] = makeCell("牆");
+    cells[25][16] = makeCell("牆");
+    cells[25][17] = makeCell("牆");
+    cells[25][18] = makeCell("牆");
+    cells[25][19] = makeCell("牆");
+    cells[25][20] = makeCell("牆");
+    cells[25][21] = makeCell("牆");
+    cells[25][22] = makeCell("牆");
+    cells[25][23] = makeCell("牆");
+    cells[25][24] = makeCell("牆");
+    cells[25][25] = makeCell("桶");
+    cells[25][26] = makeCell("桶");
+    cells[25][27] = makeCell("柵");
+    cells[26][0] = makeCell("柵");
+    cells[26][2] = makeCell("樹");
+    cells[26][3] = makeCell("人");
+    cells[26][4] = makeCell("花");
+    cells[26][7] = makeCell("樹");
+    cells[26][10] = makeCell("牆");
+    cells[26][11] = makeCell("牆");
+    cells[26][12] = makeCell("牆");
+    cells[26][13] = makeCell("牆");
+    cells[26][14] = makeCell("牆");
+    cells[26][15] = makeCell("牆");
+    cells[26][16] = makeCell("牆");
+    cells[26][17] = makeCell("牆");
+    cells[26][18] = makeCell("牆");
+    cells[26][19] = makeCell("牆");
+    cells[26][20] = makeCell("牆");
+    cells[26][21] = makeCell("牆");
+    cells[26][22] = makeCell("牆");
+    cells[26][23] = makeCell("牆");
+    cells[26][24] = makeCell("牆");
+    cells[26][25] = makeCell("人");
+    cells[26][27] = makeCell("柵");
+    cells[27][0] = makeCell("柵");
+    cells[27][1] = makeCell("花");
+    cells[27][2] = makeCell("花");
+    cells[27][3] = makeCell("花");
+    cells[27][4] = makeCell("花");
+    cells[27][5] = makeCell("花");
+    cells[27][6] = makeCell("花");
+    cells[27][7] = makeCell("花");
+    cells[27][13] = makeCell("花");
+    cells[27][21] = makeCell("花");
+    cells[27][24] = makeCell("門");
+    cells[27][27] = makeCell("柵");
+    cells[28][0] = makeCell("柵");
+    cells[28][1] = makeCell("柵");
+    cells[28][2] = makeCell("柵");
+    cells[28][3] = makeCell("柵");
+    cells[28][4] = makeCell("柵");
+    cells[28][5] = makeCell("柵");
+    cells[28][6] = makeCell("柵");
+    cells[28][7] = makeCell("柵");
+    cells[28][11] = makeCell("樹");
+    cells[28][17] = makeCell("樹");
+    cells[28][19] = makeCell("樹");
+    cells[28][24] = makeCell("柵");
+    cells[28][25] = makeCell("柵");
+    cells[28][26] = makeCell("柵");
+    cells[28][27] = makeCell("柵");
   }
-return cells;
+
+  cells[16][10].effects = [effects.makeScoreEffect('+10', Factions.RED)];
+  cells[16][11].effects = [effects.makeScoreEffect('-2', Factions.BLUE)];
+  cells[16][12].effects = [effects.makeScoreEffect('*2', Factions.YELLOW)];
+  cells[16][13].effects = [effects.makeScoreEffect('/2', Factions.GREEN)];
+  cells[16][14].effects = [effects.makeScoreEffect('+1', Factions.RED), effects.makeScoreEffect('-1', Factions.BLUE)];
+
+  return cells;
 }
