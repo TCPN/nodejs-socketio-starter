@@ -3,17 +3,33 @@ import PlayerActionEffectInfo from './PlayerActionEffectInfo.vue';
 import { useGameStore } from './store/gameStore.js';
 import { storeToRefs } from 'pinia';
 
+const props = defineProps({
+  directlyExec: {
+    type: Boolean,
+    default: false,
+  },
+});
+
 // game state
 const gameStore = useGameStore();
 const { endVote, sendVote } = gameStore;
 const { currentVote, myChoice } = storeToRefs(gameStore);
+
+async function onVoteClick(item) {
+  if (props.directlyExec) {
+    await sendVote(item);
+    await endVote();
+  } else {
+    await sendVote(item);
+  }
+}
 </script>
 
 <template>
   <div :class="$style['container']">
     <div v-if="currentVote">
       <!-- Basic vote -->
-      <!-- <button 
+      <!-- <button
         @click="endVote">
         結束投票
       </button> -->
@@ -28,7 +44,7 @@ const { currentVote, myChoice } = storeToRefs(gameStore);
             item.itemId,
             { [$style['vote-chosen']]: myChoice === item.itemId },
           ]"
-          @click="() => sendVote(item)"
+          @click="() => onVoteClick(item)"
         >
           {{ item.text }}
         </button>

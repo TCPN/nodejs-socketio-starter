@@ -1,11 +1,14 @@
 <script setup lang="js">
+import { ref } from 'vue';
 import PlayerAction from './PlayerAction.vue';
 import { useGameStore } from './store/gameStore.js';
 import { useUserStore } from './store/userStore.js';
 import { storeToRefs } from 'pinia';
+import socket from './socket.js';
 
 const userStore = useUserStore();
 const { allClients, allPlayers } = storeToRefs(userStore);
+const fullControl = ref(false);
 
 // game state
 const gameStore = useGameStore();
@@ -22,6 +25,16 @@ const {
   restartVoteTimeout,
 } = gameStore;
 const { currentVote, gameState } = storeToRefs(gameStore);
+
+async function onClickFullControl() {
+  const oldValue = fullControl.value;
+  fullControl.value = !oldValue;
+  try {
+    await socket.emitWithAck('set full control', fullControl.value)
+  } catch {
+    fullControl.value = oldValue;
+  }
+}
 </script>
 
 <template>
@@ -59,40 +72,48 @@ const { currentVote, gameState } = storeToRefs(gameStore);
       >
         開始投票
       </button>
-      <button 
+      <button
         :disabled="!gameState || !currentVote"
         @click="endVote"
       >
         結束投票
       </button>
-      <button 
+      <button
         :disabled="!gameState || !currentVote || currentVote.paused"
         @click="pauseVoteTimeout"
       >
         暫停倒數
       </button>
-      <button 
+      <button
         :disabled="!gameState || !currentVote || !currentVote.paused"
         @click="resumeVoteTimeout"
       >
         繼續倒數
       </button>
-      <button 
+      <button
         :disabled="!gameState || !currentVote"
         @click="stopVoteTimeout"
       >
         停止倒數
       </button>
-      <button 
+      <button
         :disabled="!gameState || !currentVote"
         @click="restartVoteTimeout"
       >
         重新倒數
       </button>
-      <button>
+      <button
+        :class="{
+          [$style['button-active']]: fullControl,
+        }"
+        @click="onClickFullControl"
+      >
         完全控制
       </button>
-      <PlayerAction style="height: 320px" />
+      <PlayerAction
+        style="height: 320px"
+        :directly-exec="fullControl"
+      />
     </div>
     <div :class="$style['section']">
       <h4 :class="$style['section-header']">Clients ({{ Object.keys(allPlayers).length }})</h4>
@@ -102,7 +123,7 @@ const { currentVote, gameState } = storeToRefs(gameStore);
           :key="client.id"
           :class="$style['client-item']"
         >
-          <div 
+          <div
             v-tooltip="client.status"
             :class="$style['client-status']"
             :data-status="client.status"
@@ -170,5 +191,8 @@ const { currentVote, gameState } = storeToRefs(gameStore);
 }
 .client-status[data-status="online"] {
   background-color: lawngreen;
+}
+.button-active {
+  background: darkcyan;
 }
 </style>

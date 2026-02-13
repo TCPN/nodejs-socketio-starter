@@ -37,7 +37,11 @@ async function startServer() {
   const messages = [];
   const votes = [];
   let gameState = null;
-  let nextVoteStartTimeout = null;
+  let nextVoteStartTimeoutID = null;
+  let hostFullControl = false;
+
+  let voteTimeout = 10; // seconds
+  let voteInterval = 3; // seconds
 
   function makeVoteEmitSafe(vote) {
     return {
@@ -138,16 +142,16 @@ async function startServer() {
 
   function startBetweenVoteTimeout() {
     stopBetweenVoteTimeout();
-    nextVoteStartTimeout = setTimeout(() => {
-      nextVoteStartTimeout = null;
+    nextVoteStartTimeoutID = setTimeout(() => {
+      nextVoteStartTimeoutID = null;
       trySetupGameVote();
-    }, 3000);
+    }, hostFullControl ? 0 : voteInterval * 1000);
   }
 
   function stopBetweenVoteTimeout() {
-    if (nextVoteStartTimeout) {
-      clearTimeout(nextVoteStartTimeout);
-      nextVoteStartTimeout = null;
+    if (nextVoteStartTimeoutID) {
+      clearTimeout(nextVoteStartTimeoutID);
+      nextVoteStartTimeoutID = null;
     }
   }
 
@@ -195,7 +199,7 @@ async function startServer() {
         { text: '下', itemId: 'D', info: getActionInfo(state, 'D') },
         { text: '右', itemId: 'R', info: getActionInfo(state, 'R') },
       ],
-      timeout: 10,
+      timeout: voteTimeout,
     };
     return vote;
   }
@@ -272,14 +276,15 @@ async function startServer() {
       callback(started);
     });
 
-    socket.on("vote", (info) => {
+    socket.on("vote", (info, callback) => {
       log("[request] vote", info);
       const vote = votes.find((vote) => vote.voteId === info.voteId);
       if (vote && vote.paused !== true) {
         vote.votes ??= {};
         vote.votes[info.userId] = info.itemId;
       }
-      io.to(info.userId).emit("vote chosen", { [info.userId]: info.itemId })
+      io.to(info.userId).emit("vote chosen", { [info.userId]: info.itemId });
+      callback();
     });
 
     socket.on("vote set timeout", (info) => {
@@ -311,6 +316,12 @@ async function startServer() {
     socket.on("vote cancel", (info) => {
       log("[request] vote cancel", info);
       cancelCurrentVote(info);
+    });
+
+    socket.on("set full control", (enabled, callback) => {
+      log("[request] set full control", enabled);
+      hostFullControl = enabled;
+      callback();
     });
 
     const syncData = {
