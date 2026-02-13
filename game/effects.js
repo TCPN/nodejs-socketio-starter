@@ -55,6 +55,7 @@ const EffectTriggerType = {
  * @typedef {(
  *  state: GameState,
  *  context: EffectFnContext,
+ *  effect: EffectDefinition,
  * ) => TReturn} EffectFn
  */
 
@@ -145,9 +146,10 @@ const makeScoreEffect = (expr, target) => {
   return {
     name: '分數' + expr,
     labels: 'score',
+    enabled: true,
     enableCondition: { target },
     trigger: { type: 'STAND' },
-    effectFn: (state, {}) => {
+    effectFn: (state, {}, effect) => {
       // find target players
       const playerIds = getEffectTargetPlayerIds(state, target);
       const players = playerIds.map((id) => getPlayer(state, id)).filter(v => v !== null);
@@ -157,6 +159,7 @@ const makeScoreEffect = (expr, target) => {
       for (const player of players) {
         player.score = scoreChangerFn(target.score ?? 0);
       }
+      effect.enabled = false;
     },
     target,
   };

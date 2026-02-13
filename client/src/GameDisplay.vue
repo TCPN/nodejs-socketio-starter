@@ -229,7 +229,7 @@ function onMousedownMap(event) {
                 v-for="faction in Factions"
               >
                 <div
-                  v-if="cell.effects && getScoreEffectOfFaction(faction, cell.effects)"
+                  v-if="cell.effects && getScoreEffectOfFaction(faction, cell.effects)?.enabled"
                   :class="[$style['score-mark']]"
                   :data-faction="faction"
                   v-tooltip="`${faction} 陣營 ${getScoreEffectText(getScoreEffectOfFaction(faction, cell.effects))}`"

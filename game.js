@@ -10,6 +10,7 @@ const { Direction } = require("./game/types.js");
 const { getEffectTargetPlayerIds } = require("./game/effects.js");
 
 /**
+ * @import { GameState } from './game/state';
  * @import { MapId, PlayerID, PlayerFaction, Position } from './game/types';
  * @import { EffectDefinition, EffectFnContext } from './game/effects';
  *
@@ -93,7 +94,7 @@ function execChooseTriggerEffects(state, {
   // TODO: consider effects stored at other places
   // const effects = willTrigger(state, toward);
   for (const effect of state.timelyEffects ?? []) {
-    if (effect.trigger.type !== 'CHOOSE') {
+    if (!effect.enabled || effect.trigger.type !== 'CHOOSE') {
       continue;
     }
     const targetPlayerIds = getEffectTargetPlayerIds(state, effect.target);
@@ -110,7 +111,7 @@ function execChooseTriggerEffects(state, {
         voteResult: action,
         interactPos,
         standPos,
-      });
+      }, effect);
     }
   }
 }
@@ -128,7 +129,7 @@ function execResolveTypeEffects(state, {
 }) {
   // TODO: consider effects stored at other places
   for (const effect of state.timelyEffects ?? []) {
-    if (effect.trigger.type !== 'RESOLVE') {
+    if (!effect.enabled || effect.trigger.type !== 'RESOLVE') {
       continue;
     }
     if (effect.trigger.direction !== action) {
@@ -143,7 +144,7 @@ function execResolveTypeEffects(state, {
         voteResult: action,
         interactPos,
         standPos,
-      });
+      }, effect);
     }
   }
 }
@@ -171,7 +172,7 @@ function execInteractTriggerEffects(state, {
   }).flat(2) ?? [];
   // TODO: consider effects stored at other places
   for (const effect of cellEffects.concat(itemsEffects)) {
-    if (effect.trigger.type !== 'INTERACT') {
+    if (!effect.enabled || effect.trigger.type !== 'INTERACT') {
       continue;
     }
     effect.effectFn?.(state, {
@@ -179,7 +180,7 @@ function execInteractTriggerEffects(state, {
       voteResult: action,
       interactPos,
       standPos,
-    });
+    }, effect);
   }
 }
 
@@ -204,7 +205,7 @@ function execStandTriggerEffects(state, {
   }).flat(2) ?? [];
   // TODO: consider effects stored at other places
   for (const effect of cellEffects.concat(itemsEffects)) {
-    if (effect.trigger.type !== 'STAND') {
+    if (!effect.enabled || effect.trigger.type !== 'STAND') {
       continue;
     }
     effect.effectFn?.(state, {
@@ -212,7 +213,7 @@ function execStandTriggerEffects(state, {
       voteResult: action,
       interactPos,
       standPos,
-    });
+    }, effect);
   }
 }
 

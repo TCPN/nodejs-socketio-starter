@@ -46,7 +46,7 @@ function makeArray(value) {
 }
 
 const globalItems = computed(() => {
-  return (props.effects?.global ?? []).map(normalizeEffectItem);
+  return (props.effects?.global ?? []).filter(e => e.enabled).map(normalizeEffectItem);
 });
 
 const privateItems = computed(() => {
@@ -54,7 +54,7 @@ const privateItems = computed(() => {
     ...makeArray(props.effects?.private?.['all'] ?? []),
     ...makeArray(props.effects?.private?.[myFaction.value] ?? []),
     ...makeArray(props.effects?.private?.[userId.value] ?? []),
-  ].map(normalizeEffectItem);
+  ].filter(e => e.enabled).map(normalizeEffectItem);
 });
 </script>
 
