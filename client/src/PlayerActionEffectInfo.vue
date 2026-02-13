@@ -21,7 +21,10 @@ function normalizeEffectItem(item) {
   if (typeof item === 'string') {
     return { text: item };
   } else {
-    return item;
+    return {
+      text: item.text || item.name,
+      ...item,
+    };
   }
 }
 
