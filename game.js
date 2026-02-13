@@ -40,7 +40,7 @@ function transformState(state, action, vote) {
   }
   let interactPos = null;
   let standPos = null;
-  if (toward && canGoto(map, toward)) {
+  if (toward && canGoto(state, map, toward)) {
     position.coord = toward;
   } else if (toward) {
     interactPos = getPosition(state, map, toward);
@@ -236,7 +236,7 @@ function getActionInfo(state, action) {
   const map = getMap(state, position.mapId);
   const toward = getTowardPosition(position.coord, action);
   return {
-    canGo: canGoto(map, toward),
+    canGo: canGoto(state, map, toward),
     willTrigger: willTrigger(state, toward),
   };
 }
@@ -367,14 +367,17 @@ function getMap(state, mapId) {
 
 
 /**
- *
+ * @param {GameState} state
  * @param {GameMap} map
  * @param {Coord} coord
  * @returns {boolean}
  */
-function canGoto(map, coord) {
+function canGoto(state, map, coord) {
   const [r, c] = coord;
   const cell = map.cells[r][c];
+  if (cell?.blockFn) {
+    return !cell.blockFn(state);
+  }
   if (isCellBlocking(cell)) {
     return false;
   }
