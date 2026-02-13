@@ -5,7 +5,7 @@
 
 /**
  * @typedef {{
- *   map: RoomEnum,
+ *   mapId: MapId,
  *   pos: Coord,
  * }} Position
  */
@@ -21,7 +21,7 @@
 
 /**
  * @typedef {{
- *   maps: Record<RoomEnum, GameMap>,
+ *   maps: Record<MapId, GameMap>,
  *   position: Position[],
  *   score: number,
  *   life: number,

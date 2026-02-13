@@ -31,7 +31,7 @@ const mapObjects = {
 };
 
 module.exports = {
-  getRoomMap,
+  getMainMap,
   isCellBlocking,
   CellType,
 };
@@ -66,12 +66,13 @@ function findCell(cells, condition) {
 /**
  * @returns {GameMap}
  */
-function getRoomMap() {
+function getMainMap() {
   const cells = getCells();
   const table = findCell(cells, (cell) => cell.t === CellType.TEA_TABLE);
   const fridge = findCell(cells, (cell) => cell.t === CellType.FRIDGE);
   const diary = findCell(cells, (cell) => cell.t === CellType.DIARY);
   return {
+    mapId: 'main',
     width: 28,
     height: 29,
     cells,

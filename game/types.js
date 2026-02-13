@@ -3,7 +3,7 @@
  * @import { CellType } from '../getRoomMap';
  */
 
-/** @typedef {string} RoomEnum */
+/** @typedef {string} MapId */
 /** @typedef {string} GameItem */
 /** @typedef {string} PlayerFaction */
 /** @typedef {string} PlayerID */
@@ -13,13 +13,14 @@
  *  t: CellType,
  *  effects?: EffectDefinition[],
  *  items?: GameItem[],
- *  location?: { row: number, col: number, map: string },
+ *  location?: { row: number, col: number, mapId: MapId },
  *  [k: string]: any,
  * }} Cell
  */
 
 /**
  * @typedef {{
+ *  mapId: MapId,
  *  height: number,
  *  width: number,
  *  cells: Cell[][],

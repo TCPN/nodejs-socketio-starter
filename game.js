@@ -4,12 +4,13 @@ const { randomPick } = require("./random.js");
 const log = createLogger('game');
 
 const { gameItems } = require("./gameItems.js");
-const { getRoomMap, isCellBlocking } = require("./getRoomMap.js");
+const { getMainMap, isCellBlocking } = require("./getRoomMap.js");
 const { Factions } = require('./client/src/const.js');
 const { Direction } = require("./game/types.js");
 
 /**
- * @import { PlayerID, PlayerFaction } from './types';
+ * @import { MapId, PlayerID, PlayerFaction } from './types';
+ * @import { EffectDefinition } from './game/effects';
  */
 
 /** @typedef {Direction} GameAction */
@@ -111,7 +112,7 @@ function getActionInfo(state, action) {
   if (!position) {
     return;
   }
-  const map = getMap(state, position.map);
+  const map = getMap(state, position.mapId);
   const toward = getTowardPosition(position.pos, action);
   return {
     canGo: canGoto(map, toward),
@@ -146,7 +147,7 @@ function getCurrentCell(state) {
   return getCurrentCellWithPosition(state)?.cell ?? null;
 }
 
-/** @typedef {{ mapId: RoomEnum, row: number, col: number, cell: Cell | null }} CellWithPosition */
+/** @typedef {{ mapId: MapId, row: number, col: number, cell: Cell | null }} CellWithPosition */
 
 /**
  * @param {GameState} state
@@ -157,7 +158,7 @@ function getCurrentCellWithPosition(state) {
   if (!position) {
     console.error('game state lacks character position info');
   }
-  const mapId = position?.map ?? 'main';
+  const mapId = position?.mapId ?? 'main';
   const map = getMap(state, mapId);
   const coord = position?.pos ?? map?.getDefaultCoord();
   const cell = (map.cells?.at(coord[0])?.at([coord[1]])) ?? null;
@@ -194,13 +195,13 @@ function getCurrentMap(state) {
   if (!position) {
     return;
   }
-  const map = getMap(state, position.map);
+  const map = getMap(state, position.mapId);
   return map;
 }
 
 /**
  * @param {GameState} state
- * @param {RoomEnum} mapId
+ * @param {MapId} mapId
  * @returns {GameMap | undefined}
  */
 function getMap(state, mapId) {
@@ -253,10 +254,10 @@ function willTrigger(state, coord) {
 function initGameState(players) {
   return {
     maps: {
-      room: getRoomMap(),
+      main: getMainMap(),
     },
     position: [{
-      map: 'room',
+      mapId: 'main',
       pos: [15, 13],
     }],
     score: 0,
@@ -276,7 +277,7 @@ function initGameState(players) {
  * @returns {boolean}
  */
 function checkGoal(state) {
-  return state.maps.room.getTable()?.cell.items?.includes(gameItems.CAKE);
+  return state.maps.main.getTable()?.cell.items?.includes(gameItems.CAKE);
 }
 
 // players
