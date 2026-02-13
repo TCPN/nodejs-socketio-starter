@@ -33,7 +33,6 @@ const mapObjects = {
 module.exports = {
   getRoomMap,
   isCellBlocking,
-  mapObjects,
   CellType,
 };
 

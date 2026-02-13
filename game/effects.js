@@ -165,6 +165,5 @@ const effects = {
 
 module.exports = {
   getCellEffects,
-  mapObjects,
   effects,
 };

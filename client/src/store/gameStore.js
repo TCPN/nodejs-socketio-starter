@@ -185,7 +185,7 @@ export const useGameStore = defineStore('game', () => {
     resumeVoteTimeout,
     stopVoteTimeout,
     restartVoteTimeout,
-    
+
     startListenSocket,
   };
 });

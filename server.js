@@ -88,7 +88,7 @@ async function startServer() {
     vote.timeout = timeout;
     vote.endTime = getVoteEndTime(vote);
   }
-  
+
   function pauseVote(vote) {
     stopVoteTimeout(vote);
     vote.paused = true;
