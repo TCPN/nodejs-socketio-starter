@@ -107,11 +107,11 @@ function getCells() {
     // cells[20][9].t = "几";
     // cells[17][22].t = "桌";
     // cells[17][24].t = "桌";
-    cells[16][10].effects = { [Factions.RED]: '分數+10' };
-    cells[16][11].effects = { [Factions.BLUE]: '分數-2' };
-    cells[16][12].effects = { [Factions.YELLOW]: '分數*2' };
-    cells[16][13].effects = { [Factions.GREEN]: '分數/2' };
-    cells[16][14].effects = { [Factions.RED]: '分數+1', [Factions.BLUE]: '分數-1' };
+    cells[16][10].effects = [effects.makeScoreEffect('+10', Factions.RED)];
+    cells[16][11].effects = [effects.makeScoreEffect('-2', Factions.BLUE)];
+    cells[16][12].effects = [effects.makeScoreEffect('*2', Factions.YELLOW)];
+    cells[16][13].effects = [effects.makeScoreEffect('/2', Factions.GREEN)];
+    cells[16][14].effects = [effects.makeScoreEffect('+1', Factions.RED), effects.makeScoreEffect('-1', Factions.BLUE)];
 
     cells[0][0].t = "牆";
     cells[0][1].t = "牆";
