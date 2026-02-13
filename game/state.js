@@ -1,5 +1,9 @@
 
-/** @import { GameMap } from './types' */
+/**
+ * @import { GameMap } from './types';
+ * @import { EffectDefintion } from './effects';
+ */
+
 
 /** @typedef {[row: number, col: number]} Coord */
 
@@ -26,9 +30,23 @@
  *   score: number,
  *   life: number,
  *   items: GameItem[],
+ *   timelyEffects: EffectDefinition[],
  *   players: Record<PlayerID, PlayerState>,
  *   messages: string[],
  *   paused: boolean,
  *   end: boolean,
  * }} GameState
  */
+
+/**
+ * @param {GameState} state
+ * @param {PlayerID} playerId
+ * @returns {PlayerState | null}
+ */
+function getPlayer(state, playerId) {
+  return state.players[playerId] ?? null;
+}
+
+module.exports = {
+  getPlayer,
+};

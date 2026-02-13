@@ -10,6 +10,10 @@ const { randomPick } = require("./random.js");
 
 const { Direction } = require("./game/types.js");
 
+/**
+ * @import { PlayerID } from './game/types';
+ */
+
 /** @typedef {string} VoteID */
 /** @typedef {'game'} VoteSource */
 /** @typedef {'direction'} VoteKind */
@@ -29,6 +33,7 @@ const { Direction } = require("./game/types.js");
  *  source: VoteSource,
  *  kind: VoteKind,
  *  items: VoteItem[],
+ *  votes: Record<PlayerID, VoteItem['itemId'],
  *  timeout: VoteTimeout,
  *  endTime?: number | null,
  *  timeoutId?: NodeJS.Timeout,
@@ -202,7 +207,7 @@ async function startServer() {
     messages.push(vote);
 
     const action = decideActionByVote(vote);
-    goToNextGameState(action);
+    goToNextGameState(action, vote);
   }
 
   function startBetweenVoteTimeout() {
@@ -222,9 +227,10 @@ async function startServer() {
 
   /**
    * @param {Direction | null} action
+   * @param {Vote} vote
    */
-  function goToNextGameState(action) {
-    transformState(gameState, action);
+  function goToNextGameState(action, vote) {
+    transformState(gameState, action, vote);
     io.emit("game state", gameState);
     if (gameState.message) {
       const data = {

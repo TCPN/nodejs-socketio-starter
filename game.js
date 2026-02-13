@@ -3,14 +3,17 @@ const { createLogger } = require("./logger.js");
 const { randomPick } = require("./random.js");
 const log = createLogger('game');
 
-const { gameItems } = require("./gameItems.js");
+const { gameItems, getItemObject } = require("./gameItems.js");
 const { getMainMap, isCellBlocking } = require("./getRoomMap.js");
 const { Factions } = require('./client/src/const.js');
 const { Direction } = require("./game/types.js");
+const { getEffectTargetPlayerIds } = require("./game/effects.js");
 
 /**
- * @import { MapId, PlayerID, PlayerFaction } from './types';
- * @import { EffectDefinition } from './game/effects';
+ * @import { MapId, PlayerID, PlayerFaction, Position } from './game/types';
+ * @import { EffectDefinition, EffectFnContext } from './game/effects';
+ *
+ * @import { Vote } from './server';
  */
 
 /** @typedef {Direction} GameAction */
@@ -18,57 +21,53 @@ const { Direction } = require("./game/types.js");
 /**
  * @param {GameState} state
  * @param {GameAction} action
+ * @param {Vote} vote
  * @returns {GameState}
  */
-function transformState(state, action) {
-  if (!(action in Direction)) {
+function transformState(state, action, vote) {
+  if (!(action in Direction) && action !== null) {
     console.error('Invalid action:', action);
     return state;
   }
   state.messages = [];
   const position = getCurrentPosition(state);
   const map = getCurrentMap(state);
-  const toward = getTowardPosition(position.pos, action);
+  const toward = getTowardPosition(position.coord, action);
+  if (!position || !map || !toward) {
+    console.error('Invalid character position:', position, { ...map, cells: 'skipped' }, toward )
+    return state;
+  }
+  let interactPos = null;
+  let standPos = null;
   if (canGoto(map, toward)) {
-    position.pos = toward;
+    position.coord = toward;
+  } else {
+    interactPos = getPosition(state, map, toward);
   }
-  const effects = willTrigger(state, toward);
-  for (const effect of effects.global ?? []) {
-    const name = effect.name ?? effect;
-    if (name === '看日記') {
-      state.messages.push('日記：沒想到下禮拜天就是 40 歲生日了，真是不得了，去拿蛋糕出來放在茶几上準備慶祝吧');
-    } else if (name === '拿蛋糕') {
-      state.items.push(gameItems.CAKE);
-      const fridgeItems = state.maps.room.getFridge().cell.items ??= [];
-      removeFromArray(fridgeItems, gameItems.CAKE);
-    } else if (name === '放蛋糕') {
-      removeFromArray(state.items, gameItems.CAKE);
-      const itemsOfTable = state.maps.room.getTable().cell.items ??= [];
-      itemsOfTable.push(gameItems.CAKE);
-    } else if (name === '撞牆') {
-      state.life -= 4;
-      state.messages.push('撞牆受傷，扣 4 點生命值');
-    } else if (name.startsWith('分數')) {
-      const delta = parseInt(name.slice(2));
-      state.score += delta;
-      state.messages.push(`獲得 ${delta} 分`);
-    }
-  }
+  standPos = getPosition(state, map, position.coord);
 
-  for (const [target, effect] of Object.entries(effects.private ?? {})) {
-    const name = effect.text ?? effect;
-    const targetPlayerIds = getEffectTargetPlayerIds(state, target);
-    if (name.startsWith('分數')) {
-      const delta = parseInt(name.slice(2));
-      for (const targetPlayerId of targetPlayerIds) {
-        state.players[targetPlayerId].score += delta;
-        state.players[targetPlayerId].messages ??= [];
-        state.players[targetPlayerId].messages.push(`你自己獲得 ${delta} 分`);
-      }
-    } else if (name === '道具') {
-      console.warn('「道具」還沒實作');
-    }
-  }
+  const baseEffectContext = { interactPos, standPos, vote, action };
+
+  execChooseTriggerEffects(state, baseEffectContext);
+  // skills
+  execResolveTypeEffects(state, baseEffectContext);
+  execInteractTriggerEffects(state, baseEffectContext);
+  execStandTriggerEffects(state, baseEffectContext);
+
+  // for (const [target, effect] of Object.entries(effects.private ?? {})) {
+  //   const name = effect.text ?? effect;
+  //   const targetPlayerIds = getEffectTargetPlayerIds(state, target);
+  //   if (name.startsWith('分數')) {
+  //     const delta = parseInt(name.slice(2));
+  //     for (const targetPlayerId of targetPlayerIds) {
+  //       state.players[targetPlayerId].score += delta;
+  //       state.players[targetPlayerId].messages ??= [];
+  //       state.players[targetPlayerId].messages.push(`你自己獲得 ${delta} 分`);
+  //     }
+  //   } else if (name === '道具') {
+  //     console.warn('「道具」還沒實作');
+  //   }
+  // }
 
   const finishGoal = checkGoal(state);
   if (finishGoal) {
@@ -83,17 +82,137 @@ function transformState(state, action) {
 /**
  *
  * @param {GameState} state
- * @param {PlayerID | PlayerFaction | 'all'} target
- * @returns
+ * @param {EffectFnContext & { vote: Vote }} baseContext
  */
-function getEffectTargetPlayerIds(state, target) {
-  const playerIds = Object.keys(state.players);
-  if (target === 'all') {
-    return playerIds;
-  } else if (Object.keys(Factions).includes(target)) {
-    return playerIds.filter((id) => state.players[id].faction === target);
-  } else {
-    return playerIds.filter((id) => id === target);
+function execChooseTriggerEffects(state, {
+  interactPos,
+  standPos,
+  vote,
+  action,
+}) {
+  // TODO: consider effects stored at other places
+  // const effects = willTrigger(state, toward);
+  for (const effect of state.timelyEffects ?? []) {
+    if (effect.trigger.type !== 'CHOOSE') {
+      continue;
+    }
+    const targetPlayerIds = getEffectTargetPlayerIds(state, effect.target);
+    for (const playerId of targetPlayerIds) {
+      // const player = getPlayer(state, playerId);
+      // if (!player) { continue; }
+      const playerChoose = vote.votes[playerId] ?? null;
+      if (effect.trigger.direction !== playerChoose) {
+        continue;
+      }
+      effect.effectFn?.(state, {
+        target: playerId,
+        chooseDir: playerChoose,
+        voteResult: action,
+        interactPos,
+        standPos,
+      });
+    }
+  }
+}
+
+/**
+ *
+ * @param {GameState} state
+ * @param {EffectFnContext & { vote: Vote }} baseContext
+ */
+function execResolveTypeEffects(state, {
+  interactPos,
+  standPos,
+  vote,
+  action,
+}) {
+  // TODO: consider effects stored at other places
+  for (const effect of state.timelyEffects ?? []) {
+    if (effect.trigger.type !== 'RESOLVE') {
+      continue;
+    }
+    if (effect.trigger.direction !== action) {
+      continue;
+    }
+    const targetPlayerIds = getEffectTargetPlayerIds(state, effect.target);
+    for (const playerId of targetPlayerIds) {
+      // const player = getPlayer(state, playerId);
+      // if (!player) { continue; }
+      effect.effectFn?.(state, {
+        target: playerId,
+        voteResult: action,
+        interactPos,
+        standPos,
+      });
+    }
+  }
+}
+
+/**
+ *
+ * @param {GameState} state
+ * @param {EffectFnContext & { vote: Vote }} baseContext
+ */
+function execInteractTriggerEffects(state, {
+  interactPos,
+  standPos,
+  vote,
+  action,
+}) {
+  if (!interactPos?.cell) {
+    return;
+  }
+  /** @type {EffectDefinition[]} */
+  const cellEffects = interactPos.cell.effects ?? [];
+  /** @type {EffectDefinition[]} */
+  const itemsEffects = interactPos.cell.items?.map(item => {
+    const itemObj = getItemObject(item);
+    return itemObj.effects ?? [];
+  }).flat(2) ?? [];
+  // TODO: consider effects stored at other places
+  for (const effect of cellEffects.concat(itemsEffects)) {
+    if (effect.trigger.type !== 'INTERACT') {
+      continue;
+    }
+    effect.effectFn?.(state, {
+      vote: vote,
+      voteResult: action,
+      interactPos,
+      standPos,
+    });
+  }
+}
+
+/**
+ *
+ * @param {GameState} state
+ * @param {EffectFnContext & { vote: Vote }} baseContext
+ */
+function execStandTriggerEffects(state, {
+  interactPos,
+  standPos,
+  vote,
+  action,
+}) {
+  if (!standPos?.cell) {
+    return;
+  }
+  const cellEffects = standPos.cell.effects ?? [];
+  const itemsEffects = standPos.cell.items?.map(item => {
+    const itemObj = getItemObject(item);
+    return itemObj.effects ?? [];
+  }).flat(2) ?? [];
+  // TODO: consider effects stored at other places
+  for (const effect of cellEffects.concat(itemsEffects)) {
+    if (effect.trigger.type !== 'STAND') {
+      continue;
+    }
+    effect.effectFn?.(state, {
+      vote: vote,
+      voteResult: action,
+      interactPos,
+      standPos,
+    });
   }
 }
 
@@ -138,6 +257,44 @@ function getTowardPosition([r, c], direction) {
   }
 }
 
+/**
+ * @param {GameState} state
+ * @param {MapId | GameMap | undefined} map
+ * @param {Coord} coord
+ * @returns {Cell | null}
+ */
+function getCell(state, map, coord) {
+  return getPosition(state, map, coord)?.cell ?? null;
+}
+
+/**
+ * @param {GameState} state
+ * @param {MapId | GameMap | undefined} map
+ * @param {Coord} coord
+ * @returns {Position | null}
+ */
+function getPosition(state, map, coord) {
+  if (typeof map === 'string') {
+    const mapObj = getMap(state, map);
+    if (!mapObj) {
+      return null;
+    }
+    map = mapObj;
+  }
+  if (!map) {
+    return null;
+  }
+  const cell = (map.cells?.at(coord[0])?.at([coord[1]])) ?? null;
+  if (!cell) {
+    console.error(`Cell not found:`, coord, 'in', map);
+  }
+  return {
+    mapId: map.mapId,
+    row: coord[0],
+    col: coord[1],
+    cell: cell,
+  };
+}
 
 /**
  * @param {GameState} state
@@ -147,11 +304,9 @@ function getCurrentCell(state) {
   return getCurrentCellWithPosition(state)?.cell ?? null;
 }
 
-/** @typedef {{ mapId: MapId, row: number, col: number, cell: Cell | null }} CellWithPosition */
-
 /**
  * @param {GameState} state
- * @returns {CellWithPosition}
+ * @returns {Position}
  */
 function getCurrentCellWithPosition(state) {
   const position = getCurrentPosition(state);
@@ -208,6 +363,7 @@ function getMap(state, mapId) {
   return state.maps[mapId];
 }
 
+
 /**
  *
  * @param {GameMap} map
@@ -258,7 +414,7 @@ function initGameState(players) {
     },
     position: [{
       mapId: 'main',
-      pos: [15, 13],
+      coord: [15, 13],
     }],
     score: 0,
     life: 40,

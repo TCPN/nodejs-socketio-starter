@@ -1,5 +1,8 @@
+const { getPlayer } = require('./state');
+const { PlayerFaction } = require('./types');
+
 /**
- * @import { PlayerID, PlayerFaction } from './types';
+ * @import { PlayerID, PlayerFaction, Cell, Position } from './types';
  */
 
 /**
@@ -38,11 +41,20 @@ const EffectTriggerType = {
 };
 
 /**
+ * @typedef {{
+ *  chooseDir?: Direction,
+ *  voteResult?: Direction,
+ *  target?: PlayerID,
+ *  interactPos?: Position | null,
+ *  standPos: Position | null,
+ * }} EffectFnContext
+ * */
+
+/**
  * @template TReturn
  * @typedef {(
  *  state: GameState,
- *  cell: Cell | undefined,
- *  dir: Direction,
+ *  context: EffectFnContext,
  * ) => TReturn} EffectFn
  */
 
@@ -134,16 +146,19 @@ const makeScoreEffect = (expr, target) => {
     name: '分數' + expr,
     labels: 'score',
     enableCondition: { target },
-    effectFn: (state, cell, dir) => {
+    trigger: { type: 'STAND' },
+    effectFn: (state, {}) => {
       // find target players
-      let target = {}; // TODO
-      const change = parseInt(name.slice(2));
-      state.score += delta;
-      state.messages.push(`獲得 ${delta} 分`);
+      const playerIds = getEffectTargetPlayerIds(state, target);
+      const players = playerIds.map((id) => getPlayer(state, id)).filter(v => v !== null);
+      // state.score = scoreChangerFn(state);
+      // state.messages.push(`獲得 ${delta} 分`);
       // update target players scores
-      target.score = scoreChangerFn(target.score ?? 0);
+      for (const player of players) {
+        player.score = scoreChangerFn(target.score ?? 0);
+      }
     },
-    target: target,
+    target,
   };
 };
 
@@ -207,6 +222,23 @@ function getScoreEffectOfFaction(faction, effects) {
 }
 
 
+/**
+ *
+ * @param {GameState} state
+ * @param {PlayerID | PlayerFaction | 'all'} target
+ * @returns {PlayerID[]}
+ */
+function getEffectTargetPlayerIds(state, target) {
+  const playerIds = Object.keys(state.players);
+  if (target === 'all') {
+    return playerIds;
+  } else if (target in PlayerFaction) {
+    return playerIds.filter((id) => state.players[id].faction === target);
+  } else {
+    return playerIds.filter((id) => id === target);
+  }
+}
+
 module.exports = {
   getCellEffects,
   effects,
@@ -214,4 +246,5 @@ module.exports = {
   getScoreEffectMarkText,
   isScoreEffectToFaction,
   getScoreEffectOfFaction,
+  getEffectTargetPlayerIds,
 };
