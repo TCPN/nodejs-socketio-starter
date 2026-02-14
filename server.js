@@ -49,6 +49,7 @@ const io = new Server(httpServer);
 io.use((socket, next) => {
   const clientId = socket.handshake.auth.clientId;
   if (!clientId) {
+    log('連線失敗: 缺少 clientId', socket.id);
     return next(new Error('Missing clientId'));
   }
   socket.clientId = clientId; // 自定義保存

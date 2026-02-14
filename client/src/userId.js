@@ -7,22 +7,23 @@ function generateUserId() {
   // return crypto.randomUUID(); // e.g., "af0d9c5b-62f2-42f4-87df-18344d20519c"
   return randomString(16, 16); // e.g., "af0d9c5b-62f2-42f4-87df-18344d20519c"
 }
-  
+
 // 初始化使用者 ID（只做一次）
 function getOrCreateUserId() {
   let id = localStorage.getItem(USER_ID_STORAGE_KEY);
   if (!id) {
-    createUserId();
+    return createUserId();
   } else {
     console.log('🔒 已有 userId:', id);
+    return id;
   }
-  return id;
 }
 
 function createUserId() {
   const id = generateUserId();
   localStorage.setItem(USER_ID_STORAGE_KEY, id);
   console.log('🔐 建立新的 userId:', id);
+  return id;
 }
 
 export function removeUserId() {
