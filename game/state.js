@@ -1,7 +1,7 @@
 
 /**
  * @import { GameMap } from './types';
- * @import { EffectDefintion } from './effects';
+ * @import { EffectDefinition } from './effectTypes';
  * @import { GameItem } from './item';
  */
 
@@ -31,7 +31,8 @@
  *   score: number,
  *   life: number,
  *   items: GameItem[],
- *   timelyEffects: EffectDefinition[],
+ *   effects: EffectDefinition[],
+ *   temporaryEffects: EffectDefinition[],
  *   players: Record<PlayerID, PlayerState>,
  *   messages: string[],
  *   paused: boolean,

@@ -9,7 +9,7 @@ import CountDown from './components/CountDown.vue';
 import { Factions } from './const.js';
 
 /**
- * @import { EffectDefinition } from '../../game/effects.js';
+ * @import { EffectDefinition } from '../../game/effectTypes.js';
  */
 
 const userStore = useUserStore();

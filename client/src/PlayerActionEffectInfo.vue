@@ -4,6 +4,10 @@ import { storeToRefs } from 'pinia';
 import { useGameStore } from './store/gameStore.js';
 import { useUserStore } from './store/userStore.js';
 
+/**
+ * @import { EffectDefinition } from '../../game/effectTypes.js';
+ */
+
 const props = defineProps({
   effects: {
     type: Object,
@@ -28,12 +32,53 @@ function normalizeEffectItem(item) {
   }
 }
 
+/**
+ * @param {EffectDefinition} effect
+ * @returns {string[]}
+ */
+function getEffectTargetText(effect) {
+  if (effect.displayCondition.target && effect.displayCondition.target !== 'all') {
+    return ['* 專屬 (只有你能看到這個機會)'];
+  } else {
+    return [];
+  }
+}
+
+/**
+ * @param {EffectDefinition} effect
+ * @returns {string[]}
+ */
+function getEffectTriggerText(effect) {
+  if (effect.trigger === 'CHOOSE') {
+    return ['* 選就送 (選擇就可獲得，不論投票結果)'];
+  } else if (effect.trigger === 'RESOLVE') {
+    return ['* 投票結果是此方向，就可獲得'];
+  } else {
+    return [];
+  }
+}
+
+/**
+ * @param {EffectDefinition} effect
+ * @returns {string[]}
+ */
+function getEffectLifetimeText(effect) {
+  if (effect.lifetime === 'ONE_VOTE') {
+    return ['* 只有這次投票有效'];
+  } else if (effect.lifetime === 'ONE_TRIGGER') {
+    return ['* 只能觸發一次'];
+  } else {
+    return [];
+  }
+}
+
 function getItemTooltip(item) {
   return [
     item.text,
     '',
-    '* 專屬 (只有你能看到這個機會)',
-    ...(item.cond === 'select' ? ['* 選就送 (選擇就可獲得，不論投票結果)'] : [])
+    ...getEffectTargetText(item),
+    ...getEffectTriggerText(item),
+    ...getEffectLifetimeText(item),
   ].join('\n');
 }
 

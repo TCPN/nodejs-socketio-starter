@@ -2,6 +2,7 @@
 
 ## Bugs
 - ~~in game 不能把名字改成空字串~~
+- 如果 TAKE_POT 和 PUT_POT 分成兩個 effect 分別觸發，則會因為先觸發一個然後又觸發另一個導致放下又拿起來
 
 ## Improve
 - ~~Press Enter to send 'my name' input~~
@@ -120,3 +121,4 @@
 - 得到提示
 - 顯示密碼按鈕
 - 放下火鍋料
+- 死掉復活的機制

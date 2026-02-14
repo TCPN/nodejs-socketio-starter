@@ -3,8 +3,8 @@ const { effects } = require("./game/effects");
 const { CellType } = require("./game/cell");
 
 /**
- * @import { Position } from "./game/types";
- * @import { EffectDefinition } from "./game/effects";
+ * @import { Position, Cell } from "./game/types";
+ * @import { EffectDefinition } from "./game/effectTypes";
  * @import { GameState } from "./game/state";
  */
 
@@ -13,30 +13,31 @@ const mapObjects = {
   '柵': { block: true, effects: [effects.HIT_WALL] },
   '柱': { block: true, effects: [effects.HIT_WALL] },
   '門': { block: true },
-  '桌': { block: true, effects: [effects.TAKE_POT] },
+  '桌': { block: true, effects: [effects.TAKE_POT, effects.PUT_POT] },
   '椅': { block: false, effects: [effects.CHAIR]},
-  '几': { block: true, effects: [effects.TAKE_POT] },
+  '几': { block: true, effects: [effects.TAKE_POT, effects.PUT_POT] },
   '日記': { block: true, effects: [effects.DIARY] },
-  '冰箱': { block: true },
+  '冰箱': { block: true, effects: [effects.FRIDGE] },
   '月曆': { block: true, effects: [effects.READ_CALENDAR] },
   '衣櫃': { block: true },
   '床': { block: false, effects: [effects.BED_SLEEP] },
   '櫃': { block: true },
   '電話': { block: true, effects: [effects.PHONE_CALL] },
-  '槽': { block: true },
+  '槽': { block: true, effects: [effects.WASH_HAND, effects.FILL_POT] },
   '馬桶': { block: false, effects: [effects.TOILET] },
   '浴缸': { block: false, effects: [effects.BATHTUB] },
-  '桶': { block: true, effects: [] },
-  '台': { block: true },
-  '爐': { block: true },
+  '桶': { block: true, effects: [effects.TRACH_CAN] },
+  '台': { block: true, effects: [effects.TAKE_POT, effects.PUT_POT] },
+  '爐': { block: true, effects: [effects.TAKE_POT, effects.PUT_POT] },
   '書': { block: true },
+  '鞋': { block: false, effects: [effects.WEAR_SHOES] },
   '花': { block: true },
   '樹': { block: true },
   '人': { block: true },
   '蟲': { block: true },
   '劍': { block: true, effects: [effects.SWORD] },
-  '金': { block: false },
-  '銀': { block: false },
+  '金': { block: false, effects: [effects.GOLD] },
+  '銀': { block: false, effects: [effects.SILVER] },
   '按鈕': { block: true, effects: [effects.BUTTON] },
 };
 
@@ -108,6 +109,7 @@ function getMainMap() {
 
 /**
  * @param {CellType} cellType
+ * @returns {Cell}
  */
 function makeCell(cellType) {
   const baseObject = { ...mapObjects[cellType], t: cellType } ?? { t: cellType };
@@ -122,11 +124,6 @@ function makeCell(cellType) {
           }
           return !hasShoes;
         },
-      };
-    case '鞋':
-      return {
-        ...baseObject,
-        effects: (baseObject?.effects ?? []).concat([effects.WEAR_SHOES]),
       };
     default:
       return baseObject;

@@ -1,6 +1,6 @@
 
 /**
- * @import { EffectDefinition } from './effects';
+ * @import { EffectDefinition } from './effectTypes';
  */
 
 /**
@@ -19,10 +19,14 @@ const GameItem = {
   'POT' : '鍋子',
   'FILLED_POT' : '裝水的鍋子',
   'GIFT' : '禮物',
+  'LAMB' : '頂級小羔羊',
+  'SOUP' : '湯底',
+  'FRUIT' : '果子',
+  'POT_MAT' : '火鍋料',
+  'GIFT' : '禮物',
   'TRASH' : '垃圾',
   'TRASH_BAG' : '整包垃圾',
   'FIRE' : '火',
-  'POT_MAT' : '火鍋料',
 };
 
 /**

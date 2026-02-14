@@ -1,5 +1,5 @@
 /**
- * @import { EffectDefinition } from './effects';
+ * @import { EffectDefinition } from './effectTypes';
  * @import { CellType } from './cell';
  * @import { GameItem } from './item';
  */
