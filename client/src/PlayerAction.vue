@@ -52,6 +52,7 @@ async function onVoteClick(item) {
           v-for="(item, i) in currentVote.items"
           :key="item.itemId"
           :class="[$style['option-text'], item.itemId]"
+          :direction="item.itemId"
           :effects="item.info.willTrigger"
         />
       </div>

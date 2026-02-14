@@ -9,6 +9,9 @@ import { useUserStore } from './store/userStore.js';
  */
 
 const props = defineProps({
+  direction: {
+    type: String,
+  },
   effects: {
     type: Object,
     default: () => {},
@@ -75,6 +78,7 @@ function getEffectLifetimeText(effect) {
 function getItemTooltip(item) {
   return [
     item.text,
+    ...(item.desc ? [item.desc] : []),
     '',
     ...getEffectTargetText(item),
     ...getEffectTriggerText(item),
@@ -90,23 +94,34 @@ function makeArray(value) {
   }
 }
 
-const globalItems = computed(() => {
-  return (props.effects?.global ?? []).filter(e => e.enabled).map(normalizeEffectItem);
+function getEffectsToDisplay(effects) {
+  return effects
+    .filter(e => e.enabled)
+    .filter((/** @type {EffectDefinition} */ e) => {
+      if (Array.isArray(e.trigger)) {
+        return e.trigger.some(eff => !eff.direction || eff.direction === props.direction);
+      }
+      return !e.trigger.direction || e.trigger.direction === props.direction;
+    })
+    .map(normalizeEffectItem);
+}
+
+const allEffects = computed(() => {
+  return getEffectsToDisplay(props.effects?.all ?? []);
 });
 
 const privateItems = computed(() => {
-  return [
-    ...makeArray(props.effects?.private?.['all'] ?? []),
-    ...makeArray(props.effects?.private?.[myFaction.value] ?? []),
-    ...makeArray(props.effects?.private?.[userId.value] ?? []),
-  ].filter(e => e.enabled).map(normalizeEffectItem);
+  return getEffectsToDisplay([
+    ...makeArray(props.effects?.faction?.[myFaction.value] ?? []),
+    ...makeArray(props.effects?.player?.[userId.value] ?? []),
+  ]);
 });
 </script>
 
 <template>
   <div :class="$style['effect-info-container']">
     <div
-      v-for="item in globalItems"
+      v-for="item in allEffects"
       :key="item.text"
     >
       {{ item.text }}
@@ -119,11 +134,11 @@ const privateItems = computed(() => {
     >
       <div
         :class="[$style['item-mark'], $style['item-private']]"
-      >專</div>
+      ></div>
       <div
-        v-if="item.cond === 'select'"
+        v-if="item.trigger.some(t => t.type === 'CHOOSE')"
         :class="[$style['item-mark'], $style['cond-select']]"
-      >選</div>
+      >⚡</div>
       <span :class="$style['effect-item-text']">
         {{ item.text }}
       </span>
@@ -154,19 +169,20 @@ const privateItems = computed(() => {
 }
 .item-mark {
   /* background-color: #777; */
-  border-radius: 50%;
-  width: 10px;
-  height: 10px;
-  font-size: 6px;
+  /* border-radius: 50%; */
+  /* width: 10px; */
+  /* height: 10px; */
+  font-size: 10px;
 }
 .item-mark.item-private {
   /* background-color: orange; */
-  color: #999;
-  border: 1px solid;
+  /* color: #999;
+  border: 1px solid; */
+  /* content: "🤫"; */
 }
 .item-mark.cond-select {
   /* background-color: orange; */
-  color: orange;
-  border: 1px solid;
+  /* color: orange;
+  border: 1px solid; */
 }
 </style>
