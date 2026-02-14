@@ -86,6 +86,7 @@ async function startServer() {
     return {
       ...vote,
       timeoutId: undefined,
+      sendTime: Date.now(),
     };
   }
 

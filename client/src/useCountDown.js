@@ -28,7 +28,7 @@ export function useCountDown({ init = 10, precision = 1000, onEnd, autoStop = tr
       reset(null);
       return;
     }
-    reset(vote.endTime ? (vote.endTime - Date.now()) / 1000 : vote.timeout);
+    reset(vote.endTime ? (vote.endTime - vote.sendTime) / 1000 : vote.timeout);
     if (!vote.paused) {
       start();
     }
