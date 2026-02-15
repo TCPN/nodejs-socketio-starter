@@ -332,29 +332,45 @@ const BUTTON = {
  * @param {'Character' | PlayerFaction | PlayerID} target
  * @returns {EffectDefinition}
  */
-const makeScoreEffect = (expr, target) => {
+const makePublicScoreEffect = (expr, target) => {
+  const effectFn = makeScoreEffect(expr, target).effectFn;
+  return {
+    name: '分數' + expr,
+    labels: ['score'],
+    enabled: true,
+    target,
+    displayCondition: { target },
+    trigger: [{ type: 'STAND' }, { type: 'INTERACT' }],
+    effectFn,
+  };
+};
+
+/**
+ * @param {ScoreChangeExpr} expr
+ * @param {'Character' | PlayerFaction | PlayerID} target
+ * @returns {EffectDefinition}
+ */
+function makeScoreEffect(expr, target) {
   const scoreChangerFn = getScoreChangerFnByExpr(expr);
   return {
     name: '分數' + expr,
-    labels: 'score',
+    labels: ['score'],
     enabled: true,
+    target,
     displayCondition: { target },
-    trigger: [{ type: 'STAND' }, { type: 'INTERACT' }],
+    trigger: [], // should be set when put in map
     effectFn: (state, {}, effect) => {
       // find target players
       const playerIds = getEffectTargetPlayerIds(state, target);
       const players = playerIds.map((id) => getPlayer(state, id)).filter(v => v !== null);
-      // state.score = scoreChangerFn(state);
-      // state.messages.push(`獲得 ${delta} 分`);
-      // update target players scores
+      // state.messages.push(`獲得 ${delta} 分`); // TODO: SEND PRIVATE MESSAGES
       for (const player of players) {
         player.score = scoreChangerFn(target.score ?? 0);
       }
       effect.enabled = false;
     },
-    target,
   };
-};
+}
 
 /** @type {Record<ScoreChangeOp, (oprand: number) => ((score: number) => number)>} */
 const scoreChangerFnMaker = {
@@ -399,6 +415,7 @@ const effects = {
   // items
   FIRE,
 
+  makePublicScoreEffect,
   makeScoreEffect,
 };
 

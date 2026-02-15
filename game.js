@@ -23,6 +23,7 @@ const {
   execInteractTriggerEffects,
   execStandTriggerEffects
 } = require("./game/execEffects.js");
+const { effects } = require("./game/effects.js");
 
 /**
  * @import { GameState, PlayerState } from './game/state';
@@ -46,6 +47,7 @@ function transformState(state, action, vote) {
     return state;
   }
   state.messages = [];
+  state.temporaryEffects = [];
   const position = getCurrentPosition(state);
   const map = getCurrentMap(state);
   const toward = getTowardPosition(position.coord, action);
@@ -78,6 +80,8 @@ function transformState(state, action, vote) {
     state.end = 'failed';
     state.messages.push('你死了！遊戲結束？');
   }
+
+  generateRandomEffects(state);
 
   return state;
 }
@@ -188,6 +192,44 @@ function willTrigger(state, dir, coord) {
     }
   }
   return displayEffects;
+}
+
+function makeRandomScoreEffect(effectExpr, playerId, direction, namePrefix = '') {
+  const effect = effects.makeScoreEffect(effectExpr, playerId);
+  effect.name = `${namePrefix} ${effectExpr}分`;
+  effect.desc = '隨機事件';
+  effect.trigger = [{ type: 'CHOOSE', direction }];
+  effect.lifetime = 'ONE_VOTE';
+  return effect;
+}
+
+/**
+ * @param {GameState} state
+ */
+function generateRandomEffects(state) {
+  const RANDOM_GIFT_PROB = 1/4;
+  for (const playerId in state.players) {
+    if (Math.random() < RANDOM_GIFT_PROB) {
+      // Generate random effect for the player
+      const effectExpr = randomPick([
+        '+5', '+10', '+15', '+20',
+        '-5', '-10', '-15', '-20',
+      ]);
+      const direction = randomPick(Object.values(Direction));
+      const effect = makeRandomScoreEffect(effectExpr, playerId, direction);
+      (state.temporaryEffects ??= []).push(effect);
+      log(`Generated random effect for player ${playerId}: ${effect.name}`);
+    }
+  }
+  // big gift
+  const pickedPlayer = randomPick(Object.values(state.players));
+  if (pickedPlayer) {
+    const effectExpr = randomPick(['+89', '+50', '*2', '*3']);
+        const direction = randomPick(Object.values(Direction));
+    const effect = makeRandomScoreEffect(effectExpr, pickedPlayer.id, direction);
+    (state.temporaryEffects ??= []).push(effect);
+    log(`Generated big random effect for player ${pickedPlayer.id}: ${effect.name}`);
+  }
 }
 
 /**

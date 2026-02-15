@@ -134,11 +134,10 @@ function makeCell(cellType) {
  * @returns {Cell[][]}
  */
 function getCells() {
-  const cells = Array.from({ length: 40 }, (_, i) =>
-      Array.from({ length: 40 }, (_, j) =>
-        ({})
-      )
-    );
+  const cells = Array.from({ length: 40 }, () =>
+    Array.from({ length: 40 }, () => ({}))
+  );
+
   {
     // cells[20][20] = makeCell("START");
     // cells[6][13] = makeCell("冰箱");
@@ -603,11 +602,11 @@ function getCells() {
     cells[28][27] = makeCell("柵");
   }
 
-  cells[16][10].effects = [effects.makeScoreEffect('+10', Factions.RED)];
-  cells[16][11].effects = [effects.makeScoreEffect('-2', Factions.BLUE)];
-  cells[16][12].effects = [effects.makeScoreEffect('*2', Factions.YELLOW)];
-  cells[16][13].effects = [effects.makeScoreEffect('/2', Factions.GREEN)];
-  cells[16][14].effects = [effects.makeScoreEffect('+1', Factions.RED), effects.makeScoreEffect('-1', Factions.BLUE)];
+  cells[16][10].effects = [effects.makePublicScoreEffect('+10', Factions.RED)];
+  cells[16][11].effects = [effects.makePublicScoreEffect('-2', Factions.BLUE)];
+  cells[16][12].effects = [effects.makePublicScoreEffect('*2', Factions.YELLOW)];
+  cells[16][13].effects = [effects.makePublicScoreEffect('/2', Factions.GREEN)];
+  cells[16][14].effects = [effects.makePublicScoreEffect('+1', Factions.RED), effects.makePublicScoreEffect('-1', Factions.BLUE)];
 
   return cells;
 }
