@@ -5,7 +5,7 @@ const { createServer: createViteServer } = require('vite');
 
 const { log } = require("./logger.js");
 const { setupKeyboardShortcuts } = require("./serverHotkey.js");
-const { transformState, initGameState, getActionInfo } = require("./game.js");
+const { transformState, initGameState, getActionInfo, addNewPlayer } = require("./game.js");
 const { randomPick } = require("./random.js");
 
 const { Direction } = require("./game/types.js");
@@ -411,6 +411,11 @@ async function startServer() {
       callback();
     });
 
+    const client = clients.get(socket.clientId);
+    if (gameState && client.role === 'player' && !gameState.players[socket.clientId]) {
+      addNewPlayer(gameState, socket.clientId);
+    }
+
     const syncData = {
       messages,
       vote: isVoteRunning() ? makeVoteEmitSafe(getCurrentVote()) : null,
@@ -451,6 +456,7 @@ async function startServer() {
 
     socket.on("disconnect", () => {
       log(`使用者離開: clientId = ${socket.clientId}`);
+      client.status = 'offline';
       delete client.sockets[socket.id];
       if (Object.keys(client.sockets).length === 0) {
         io.emit("clients update", { [socket.clientId]: { status: 'offline' } });

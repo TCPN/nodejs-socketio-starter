@@ -284,8 +284,37 @@ function decideFaction() {
   return randomPick(Object.keys(Factions));
 }
 
+/**
+ * @param {GameState} state
+ * @param {PlayerID} playerId
+ * @returns {void}
+ */
+function addNewPlayer(state, playerId) {
+  if (playerId in state.players) {
+    return;
+  }
+  if (playerId in (state.removedPlayers ?? {})) {
+    state.players[playerId] = state.removedPlayers[playerId];
+    delete state.removedPlayers[playerId];
+    return;
+  }
+  state.players[playerId] = initPlayerState(state, playerId);
+}
+
+/**
+ * @param {GameState} state
+ * @param {PlayerID} playerId
+ */
+function removePlayer(state, playerId) {
+  const player = state.players[playerId];
+  delete state.players[playerId];
+  (state.removedPlayers ??= {})[playerId] = player;
+}
+
 module.exports = {
   transformState,
   initGameState,
   getActionInfo,
+  addNewPlayer,
+  removePlayer,
 };
