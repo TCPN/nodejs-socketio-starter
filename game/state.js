@@ -17,7 +17,7 @@
 
 /**
  * @typedef {{
- *  id?: PlayerID,
+ *  id: PlayerID,
  *  faction: PlayerFaction,
  *  score: number,
  *  items?: GameItem[],

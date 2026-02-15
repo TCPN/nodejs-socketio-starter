@@ -25,7 +25,7 @@ const {
 } = require("./game/execEffects.js");
 
 /**
- * @import { GameState } from './game/state';
+ * @import { GameState, PlayerState } from './game/state';
  * @import { MapId, PlayerID, PlayerFaction, Position, GameMap } from './game/types';
  * @import { EffectDefinition } from './game/effectTypes';
  *
@@ -205,14 +205,24 @@ function initGameState(players) {
     }],
     score: 0,
     life: 40,
-    players: Object.fromEntries(players.map((id) => [id, {
-      faction: decideFaction(),
-      score: 0,
-    }])),
+    players: Object.fromEntries(players.map((id) => [id, initPlayerState(null, id)])),
     items: [],
     paused: false,
     end: false,
   };
+}
+
+/**
+ * @param {GameState} state
+ * @param {PlayerID} playerId
+ * @returns {PlayerState}
+ */
+function initPlayerState(state, playerId) {
+  return {
+    id: playerId,
+    faction: decideFaction(state),
+    score: 0,
+  }
 }
 
 /**
