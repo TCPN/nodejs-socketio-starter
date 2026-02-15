@@ -79,6 +79,10 @@
 - kick user
 - highlight user (high frequency flash)
 
+- willTrigger 其實就是在處理四個方向應該顯示什麼提示給使用者，完全是顯示在使用者裝置上的資訊
+    - 所以他沒辦法表達所有的可能性，也不需要，只要能傳達我想呈現的資訊就好
+
+
 ## Features
 
 - UI: 隱藏地圖外的格子
