@@ -1,6 +1,7 @@
 const { Factions } = require("./client/src/const");
 const { effects } = require("./game/effects");
 const { CellType } = require("./game/cell");
+const { GameItem } = require("./game/item");
 
 /**
  * @import { Position, Cell } from "./game/types";
@@ -607,6 +608,8 @@ function getCells() {
   cells[16][12].effects = [effects.makePublicScoreEffect('*2', Factions.YELLOW)];
   cells[16][13].effects = [effects.makePublicScoreEffect('/2', Factions.GREEN)];
   cells[16][14].effects = [effects.makePublicScoreEffect('+1', Factions.RED), effects.makePublicScoreEffect('-1', Factions.BLUE)];
+
+  cells[23][2].items = [GameItem.POT];
 
   return cells;
 }
