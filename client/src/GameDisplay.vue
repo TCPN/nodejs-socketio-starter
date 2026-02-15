@@ -247,6 +247,14 @@ function onMousedownMap(event) {
           <span> {{ gameState.life }}</span>
         </div>
         <div :class="$style['player-status-item']">
+          <label>目前玩家人數: </label>
+          <span> {{ Object.keys(gameState.players).length }}</span>
+        </div>
+        <div :class="$style['player-status-item']">
+          <label>分數: </label>
+          <span> {{ gameState.score }}</span>
+        </div>
+        <div :class="$style['player-status-item']">
           <!-- <label>{{ gameState.messages?.length > 0 ? '訊息: ' : ''}}</label> -->
           <ul>
             <li
@@ -379,7 +387,7 @@ function onMousedownMap(event) {
 .player-status-panel {
   height: 100px;
   display: grid;
-  grid-template-columns: 1fr 1fr 2fr;
+  grid-template-columns: 150px 150px 150px 1fr;
   place-items: center;
   align-content: center;
 }
