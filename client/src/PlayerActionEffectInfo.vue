@@ -41,21 +41,23 @@ function normalizeEffectItem(item) {
  */
 function getEffectTargetText(effect) {
   if (effect.displayCondition.target && effect.displayCondition.target !== 'all') {
-    return ['* 專屬 (只有你能看到這個機會)'];
+    return ['* 只有你會被影響'];
   } else {
     return [];
   }
 }
+
+
 
 /**
  * @param {EffectDefinition} effect
  * @returns {string[]}
  */
 function getEffectTriggerText(effect) {
-  if (effect.trigger === 'CHOOSE') {
-    return ['* 選就送 (選擇就可獲得，不論投票結果)'];
-  } else if (effect.trigger === 'RESOLVE') {
-    return ['* 投票結果是此方向，就可獲得'];
+  if (makeArray(effect.trigger)?.some(t => t.type === 'CHOOSE')) {
+    return ['* 只要你投給這邊，就會生效'];
+  } else if (makeArray(effect.trigger)?.some(t => t.type === 'RESOLVE')) {
+    return ['* 當投票結果是此方向，就會生效'];
   } else {
     return [];
   }
