@@ -1,5 +1,5 @@
 function randomPick(array) {
-  return array[Math.floor(Math.random() * array.length)];
+  return array[Math.min(Math.floor(Math.random() * array.length), array.length - 1)];
 }
 
 module.exports = {
