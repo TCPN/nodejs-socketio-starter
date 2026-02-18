@@ -254,7 +254,7 @@ function onMousedownMap(event) {
           <label>分數: </label>
           <span> {{ gameState.score }}</span>
         </div>
-        <div :class="$style['player-status-item']">
+        <div :class="[$style['player-status-item'], $style['player-status-item-messages']]">
           <!-- <label>{{ gameState.messages?.length > 0 ? '訊息: ' : ''}}</label> -->
           <ul>
             <li
@@ -393,6 +393,10 @@ function onMousedownMap(event) {
 }
 .player-status-item {
   visibility: visible; /* dummy */
+}
+.player-status-item-messages {
+  justify-self: start;
+  align-self: start;
 }
 .items-panel {
   height: 100px;
