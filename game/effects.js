@@ -365,7 +365,7 @@ function makeScoreEffect(expr, target) {
       const players = playerIds.map((id) => getPlayer(state, id)).filter(v => v !== null);
       // state.messages.push(`獲得 ${delta} 分`); // TODO: SEND PRIVATE MESSAGES
       for (const player of players) {
-        player.score = scoreChangerFn(target.score ?? 0);
+        player.score = scoreChangerFn(player.score ?? 0);
       }
       effect.enabled = false;
     },
