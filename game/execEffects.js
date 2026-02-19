@@ -4,14 +4,15 @@ const { getItemObject } = require('./item.js');
 
 /**
  * @import { EffectDefinition, EffectFnContext } from './effectTypes';
+ * @import { GameState } from './state';
  */
 
 /**
- *
+ * @param {EffectDefinition[]} effects
  * @param {GameState} state
  * @param {EffectFnContext & { vote: Vote }} baseContext
  */
-function execChooseTriggerEffects(state, {
+function execChooseTriggerEffects(effects, state, {
   interactPos,
   standPos,
   vote,
@@ -19,7 +20,7 @@ function execChooseTriggerEffects(state, {
 }) {
   // TODO: consider effects stored at other places
   // const effects = willTrigger(state, toward);
-  for (const effect of state.timelyEffects ?? []) {
+  for (const effect of effects) {
     if (!effect.enabled || !canTriggerWith(effect, 'CHOOSE')) {
       continue;
     }
@@ -43,18 +44,18 @@ function execChooseTriggerEffects(state, {
 }
 
 /**
- *
+ * @param {EffectDefinition[]} effects
  * @param {GameState} state
  * @param {EffectFnContext & { vote: Vote }} baseContext
  */
-function execResolveTypeEffects(state, {
+function execResolveTypeEffects(effects, state, {
   interactPos,
   standPos,
   vote,
   action,
 }) {
   // TODO: consider effects stored at other places
-  for (const effect of state.timelyEffects ?? []) {
+  for (const effect of effects) {
     if (!effect.enabled || !canTriggerWith(effect, 'RESOLVE')) {
       continue;
     }
@@ -89,15 +90,15 @@ function execInteractTriggerEffects(state, {
   if (!interactPos?.cell) {
     return;
   }
-  /** @type {EffectDefinition[]} */
+  const globalEffects = state.globalEffects ?? [];
   const cellEffects = interactPos.cell.effects ?? [];
-  /** @type {EffectDefinition[]} */
   const itemsEffects = interactPos.cell.items?.map(item => {
     const itemObj = getItemObject(item);
     return itemObj.effects ?? [];
   }).flat(2) ?? [];
+  const effects = globalEffects.concat(cellEffects, itemsEffects);
   // TODO: consider effects stored at other places
-  for (const effect of cellEffects.concat(itemsEffects)) {
+  for (const effect of effects) {
     if (
       !effect.enabled
       || effect.displayCondition?.fn?.(state, { vote, voteResult: action, interactPos, standPos }, effect) === false
@@ -128,13 +129,15 @@ function execStandTriggerEffects(state, {
   if (!standPos?.cell) {
     return;
   }
+  const globalEffects = state.globalEffects ?? [];
   const cellEffects = standPos.cell.effects ?? [];
   const itemsEffects = standPos.cell.items?.map(item => {
     const itemObj = getItemObject(item);
     return itemObj.effects ?? [];
   }).flat(2) ?? [];
+  const effects = globalEffects.concat(cellEffects, itemsEffects);
   // TODO: consider effects stored at other places
-  for (const effect of cellEffects.concat(itemsEffects)) {
+  for (const effect of effects) {
     if (
       !effect.enabled
       || effect.displayCondition?.fn?.(state, { vote, voteResult: action, interactPos, standPos }, effect) === false

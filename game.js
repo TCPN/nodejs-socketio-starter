@@ -47,7 +47,6 @@ function transformState(state, action, vote) {
     return state;
   }
   state.messages = [];
-  state.temporaryEffects = [];
   const position = getCurrentPosition(state);
   const map = getCurrentMap(state);
   const toward = getTowardPosition(position.coord, action);
@@ -55,8 +54,25 @@ function transformState(state, action, vote) {
     console.error('Invalid character position:', position, { ...map, cells: 'skipped' }, toward )
     return state;
   }
+
   let interactPos = null;
   let standPos = null;
+
+  const baseEffectContext = { interactPos, standPos, vote, action };
+
+  const globalEffects = state.globalEffects ?? [];
+  // drop one-vote effects
+  state.globalEffects = globalEffects.filter(effect => {
+    if (effect.lifetime === 'ONE_VOTE') {
+      return false;
+    }
+    return true;
+  });
+
+  execChooseTriggerEffects(globalEffects, state, baseEffectContext);
+  // skills
+  execResolveTypeEffects(globalEffects, state, baseEffectContext);
+
   if (toward && canGoto(state, map, toward)) {
     position.coord = toward;
   } else if (toward) {
@@ -64,11 +80,8 @@ function transformState(state, action, vote) {
   }
   standPos = getPosition(state, map, position.coord);
 
-  const baseEffectContext = { interactPos, standPos, vote, action };
-
-  execChooseTriggerEffects(state, baseEffectContext);
-  // skills
-  execResolveTypeEffects(state, baseEffectContext);
+  baseEffectContext.interactPos = interactPos;
+  baseEffectContext.standPos = standPos;
   execInteractTriggerEffects(state, baseEffectContext);
   execStandTriggerEffects(state, baseEffectContext);
 
@@ -149,7 +162,7 @@ function willTrigger(state, dir, coord) {
   const map = getCurrentMap(state);
   const position = getPosition(state, map, coord);
   const cell = position?.cell;
-  const globalEffects = (state.effects ?? []).concat(state.temporaryEffects ?? []);
+  const globalEffects = (state.globalEffects ?? []);
   const cellEffects = cell?.effects ?? [];
   const itemsEffects = cell?.items?.map(item => {
     const itemObj = getItemObject(item);
@@ -217,7 +230,7 @@ function generateRandomEffects(state) {
       ]);
       const direction = randomPick(Object.values(Direction));
       const effect = makeRandomScoreEffect(effectExpr, playerId, direction);
-      (state.temporaryEffects ??= []).push(effect);
+      (state.globalEffects ??= []).push(effect);
       log(`Generated random effect for player ${playerId}: ${effect.name}`);
     }
   }
@@ -227,7 +240,7 @@ function generateRandomEffects(state) {
     const effectExpr = randomPick(['+89', '+50', '*2', '*3']);
         const direction = randomPick(Object.values(Direction));
     const effect = makeRandomScoreEffect(effectExpr, pickedPlayer.id, direction);
-    (state.temporaryEffects ??= []).push(effect);
+    (state.globalEffects ??= []).push(effect);
     log(`Generated big random effect for player ${pickedPlayer.id}: ${effect.name}`);
   }
 }
