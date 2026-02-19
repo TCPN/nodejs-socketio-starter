@@ -1,3 +1,10 @@
+function makeArray(item) {
+  if (Array.isArray(item)) {
+    return item;
+  }
+  return [item];
+}
+
 function removeFromArray(array, item) {
   const index = array?.indexOf(item);
   if (index >= 0) {
@@ -13,6 +20,7 @@ function transferItem(item, srcArr, dstArr) {
 }
 
 module.exports = {
+  makeArray,
   removeFromArray,
   transferItem,
 };

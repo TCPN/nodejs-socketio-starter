@@ -1,3 +1,4 @@
+const { makeArray } = require('../array.js');
 const { getEffectTargetPlayerIds, canTriggerWith } = require('./effectHelpers.js');
 const { getItemObject } = require('./item.js');
 
@@ -26,8 +27,8 @@ function execChooseTriggerEffects(state, {
     for (const playerId of targetPlayerIds) {
       // const player = getPlayer(state, playerId);
       // if (!player) { continue; }
-      const playerChoose = vote.votes[playerId] ?? null;
-      if (effect.trigger.direction !== playerChoose) {
+      const playerChoose = vote.votes?.[playerId] ?? null;
+      if (!makeArray(effect.trigger).map(trigger => trigger.direction).includes(playerChoose)) {
         continue;
       }
       effect.effectFn?.(state, {
@@ -57,7 +58,7 @@ function execResolveTypeEffects(state, {
     if (!effect.enabled || !canTriggerWith(effect, 'RESOLVE')) {
       continue;
     }
-    if (effect.trigger.direction !== action) {
+    if (!makeArray(effect.trigger).map(trigger => trigger.direction).includes(action)) {
       continue;
     }
     const targetPlayerIds = getEffectTargetPlayerIds(state, effect.target);
